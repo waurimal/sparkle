@@ -104,25 +104,6 @@
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
-
-        /* Lotto Ball Animation */
-        .lotto-ball {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            font-size: 1.75rem;
-            font-weight: 900;
-            color: #0f172a;
-            box-shadow: inset -4px -4px 8px rgba(0,0,0,0.4), inset 4px 4px 8px rgba(255,255,255,0.7), 0 6px 12px rgba(0,0,0,0.5);
-            animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-        }
-        @keyframes bounce-in {
-            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
-            100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
     </style>
 </head>
 
@@ -547,63 +528,74 @@
         </div>
 
         <!-- ───────────────────────────────────────────────────────────────── -->
-        <!-- 4. 라운드 종료 / 최종 승리 & 상품 로또 화면 (Victory & Lotto) -->
         <!-- ───────────────────────────────────────────────────────────────── -->
-        <div id="screen-result" class="hidden max-w-2xl mx-auto w-full space-y-4">
+        <!-- 4. 게임 종료 및 성적 저장 화면 (Game Over & Score Result) -->
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <div id="screen-result" class="hidden max-w-xl mx-auto w-full space-y-4">
             <div class="sparkle-card p-6 text-center space-y-5">
+                <!-- 결과 뱃지 & 타이틀 -->
                 <div class="space-y-1">
-                    <span class="text-5xl block mb-2">👑</span>
-                    <h2 class="text-2xl font-black text-slate-100">서바이벌 종료!</h2>
-                    <p id="result-winner-desc" class="text-xs font-bold text-pink-400">최후의 생존자가 탄생했습니다!</p>
+                    <span id="result-header-icon" class="text-5xl block mb-2">👑</span>
+                    <h2 id="result-header-title" class="text-2xl font-black text-slate-100">서바이벌 종료!</h2>
+                    <p id="result-header-desc" class="text-xs font-bold text-pink-400">최종 결과 및 성적 요약</p>
                 </div>
 
-                <!-- 최종 승리자 / 생존자 카드 -->
-                <div class="p-4 bg-gradient-to-r from-pink-900/30 via-slate-900 to-amber-900/30 rounded-2xl border border-pink-500/30 space-y-2">
-                    <span class="text-xs font-extrabold text-amber-300 uppercase tracking-widest block">CHAMPION</span>
-                    <div class="flex items-center justify-center gap-3">
-                        <span id="result-winner-avatar" class="text-3xl">🐥</span>
-                        <div class="text-left">
-                            <div id="result-winner-name" class="text-lg font-black text-slate-100">홍길동</div>
-                            <div id="result-winner-info" class="text-xs text-slate-400 font-bold">6학년 1반 12번</div>
+                <!-- 플레이어 성적 카드 -->
+                <div class="p-5 bg-slate-900/90 rounded-2xl border border-slate-700 space-y-4 shadow-xl">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <span id="result-player-avatar" class="text-3xl">🐥</span>
+                            <div class="text-left">
+                                <div id="result-player-name" class="text-base font-black text-slate-100">홍길동</div>
+                                <div id="result-player-info" class="text-xs text-slate-400 font-bold">6학년 1반 12번</div>
+                            </div>
                         </div>
-                        <span id="result-winner-score" class="text-2xl font-black font-game text-amber-400 ml-4">100점</span>
+                        <span id="result-player-badge" class="px-3 py-1 rounded-full text-xs font-black bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                            우승
+                        </span>
+                    </div>
+
+                    <!-- 대형 점수 표시 영역 -->
+                    <div class="py-2">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">최종 획득 점수</span>
+                        <div id="result-final-score" class="text-5xl font-black font-game text-amber-400 tracking-tight">100점</div>
+                    </div>
+
+                    <!-- 세부 성적 요약 그리드 -->
+                    <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
+                        <div class="p-2.5 bg-slate-950/60 rounded-xl">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-0.5">맞힌 단어</span>
+                            <span id="result-words-count" class="text-xs font-black text-emerald-400 font-game">0단어</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-950/60 rounded-xl">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-0.5">생존 보너스</span>
+                            <span id="result-bonus-score" class="text-xs font-black text-amber-300 font-game">+0점</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-950/60 rounded-xl">
+                            <span class="text-[10px] text-slate-400 font-bold block mb-0.5">학습 단원</span>
+                            <span id="result-unit-label" class="text-[11px] font-black text-slate-300 truncate block">Lesson 9</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 캔바 표준 하이라이트: [상품 로또 머신] (Lucky Draw) -->
-                <div class="p-5 bg-slate-900 rounded-2xl border-2 border-amber-500/40 space-y-4 shadow-xl">
-                    <div class="flex items-center justify-center gap-2">
-                        <span class="text-xl">🎰</span>
-                        <span class="font-jua text-xl text-amber-400">상품 로또 (Lucky Draw)</span>
-                        <span class="text-xl">🎉</span>
-                    </div>
-                    <p class="text-xs text-slate-400">생존자들을 위한 행운의 알파벳/숫자 추첨 결과입니다!</p>
-                    
-                    <!-- 4개 로또 볼 -->
-                    <div id="lotto-balls-container" class="flex justify-center items-center gap-3 py-2">
-                        <div class="lotto-ball bg-gradient-to-br from-amber-300 to-amber-500" id="lotto-ball-1">?</div>
-                        <div class="lotto-ball bg-gradient-to-br from-pink-300 to-pink-500" id="lotto-ball-2">?</div>
-                        <div class="lotto-ball bg-gradient-to-br from-cyan-300 to-blue-500" id="lotto-ball-3">?</div>
-                        <div class="lotto-ball bg-gradient-to-br from-emerald-300 to-teal-500" id="lotto-ball-4">?</div>
-                    </div>
-
-                    <button type="button" id="btn-reroll-lotto" onclick="rollPrizeLotto()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 mx-auto">
-                        <i class="fas fa-rotate-right"></i> 다시 추첨하기
-                    </button>
-                    <div class="text-[11px] text-slate-400">
-                        ※ 선생님께 당첨 볼 알파벳을 보여드리고 행운의 보상을 받으세요!
-                    </div>
+                <!-- 명예의 전당 저장 상태 알림 -->
+                <div id="result-save-status" class="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle text-emerald-400 text-sm"></i>
+                    <span id="result-save-msg">성적이 명예의 전당에 실시간으로 안전하게 저장되었습니다!</span>
                 </div>
 
                 <!-- 액션 버튼 -->
-                <div class="flex gap-2">
-                    <button type="button" onclick="returnHome()" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition">
-                        홈으로 이동
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="returnHomeAndFocusHof()" class="py-3 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700">
+                        <i class="fas fa-trophy"></i> 명예의 전당 보기
                     </button>
-                    <button type="button" onclick="restartCurrentGame()" class="flex-1 py-3 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-xl transition shadow">
-                        다시 플레이
+                    <button type="button" onclick="restartCurrentGame()" class="py-3 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5">
+                        <i class="fas fa-rotate-right"></i> 다시 도전하기
                     </button>
                 </div>
+                <button type="button" onclick="returnHome()" class="w-full py-2 text-slate-400 hover:text-slate-200 text-xs font-bold transition">
+                    <i class="fas fa-home"></i> 메인 화면으로 돌아가기
+                </button>
             </div>
         </div>
 
@@ -1025,14 +1017,6 @@
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
                     osc.start(now);
                     osc.stop(now + 0.6);
-                } else if (type === 'lotto') {
-                    // 로또볼 구르는 소리
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(300 + Math.random() * 400, now);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                    osc.start(now);
-                    osc.stop(now + 0.12);
                 } else if (type === 'fanfare') {
                     // 승리 팡파레
                     const chord = [523.25, 659.25, 783.99, 1046.50];
@@ -1625,6 +1609,28 @@
             setFeedMessage(`💥 ${reason}`);
             updateArenaUI(soloGame.players, soloGame.currentTurnIndex);
 
+            // 내가 탈락한 경우
+            if (curPlayer.id === 'me' || curPlayer.name === myProfile.name) {
+                if (currentGameMode === 'solo') {
+                    // 개인전은 내가 탈락하면 대기 없이 바로 최종 성적 저장 및 결과 화면 표시
+                    setTimeout(() => {
+                        const correctWords = Math.floor((curPlayer.score || 0) / 10);
+                        finishGameResult({
+                            isWinner: false,
+                            score: curPlayer.score || 0,
+                            resultLabel: '탈락',
+                            correctWords: correctWords,
+                            bonus: 0,
+                            reason: reason
+                        });
+                    }, 1200);
+                    return;
+                } else {
+                    // 멀티플레이는 실시간 점수 백그라운드 저장 후 관전 모드 진행
+                    saveScoreToHallOfFame(curPlayer.score || 0, '탈락', soloGame.unit ? soloGame.unit.id : 'unit_lesson_9_canva');
+                }
+            }
+
             const alivePlayers = soloGame.players.filter(p => p.isAlive);
             if (alivePlayers.length <= 1) {
                 // 최후의 1인 우승!
@@ -1705,55 +1711,89 @@
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // ── 캔바 표준 하이라이트: 상품 로또 (Lucky Draw) & 결과 화면 ──
+        // ── 최종 결과 & 명예의 전당 점수 자동 저장 화면 ──
         // ═══════════════════════════════════════════════════════════════════
         function finishGameVictory(winner) {
+            const isMeWinner = (winner && (winner.id === 'me' || winner.name === myProfile.name));
+            const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
+            const baseScore = myPlayer ? myPlayer.score : 0;
+            const finalScore = baseScore + (isMeWinner ? 50 : 10);
+            const correctWords = Math.floor(baseScore / 10);
+
+            finishGameResult({
+                isWinner: isMeWinner,
+                score: finalScore,
+                resultLabel: isMeWinner ? '우승' : '생존',
+                correctWords: correctWords,
+                bonus: isMeWinner ? 50 : 10,
+                reason: isMeWinner ? '최후의 1인으로 서바이벌에서 승리했습니다!' : `[${winner ? winner.name : '플레이어'}]님이 우승했습니다.`
+            });
+        }
+
+        async function finishGameResult(options) {
             if (timerInterval) clearInterval(timerInterval);
             showScreen('screen-result');
-            playSfx('fanfare');
 
-            // 축하 폭죽 발사
-            try {
-                confetti({
-                    particleCount: 120,
-                    spread: 80,
-                    origin: { y: 0.6 }
-                });
-            } catch(e) {}
+            const isWinner = options.isWinner;
+            const finalScore = options.score || 0;
+            const resultLabel = options.resultLabel || (isWinner ? '우승' : '탈락');
 
-            document.getElementById('result-winner-avatar').innerText = winner.avatar;
-            document.getElementById('result-winner-name').innerText = winner.name;
-            document.getElementById('result-winner-info').innerText = (winner.id === 'me') ? `${myProfile.grade}학년 ${myProfile.classNum}반 ${myProfile.studentNum}번` : 'AI 봇 서바이벌 챔피언';
-            document.getElementById('result-winner-score').innerText = `${winner.score + 50}점`;
+            if (isWinner) {
+                playSfx('fanfare');
+                try {
+                    confetti({
+                        particleCount: 120,
+                        spread: 80,
+                        origin: { y: 0.6 }
+                    });
+                } catch(e) {}
 
-            // 로또 번호 4자리 자동 추첨
-            rollPrizeLotto();
+                document.getElementById('result-header-icon').innerText = '👑';
+                document.getElementById('result-header-title').innerText = '서바이벌 우승!';
+                document.getElementById('result-header-desc').innerText = '최후의 1인으로 끝까지 살아남았습니다!';
+                document.getElementById('result-header-desc').className = 'text-xs font-bold text-amber-400';
+                document.getElementById('result-player-badge').innerText = '🏆 최종 우승';
+                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            } else {
+                playSfx('down');
+                document.getElementById('result-header-icon').innerText = '🪑';
+                document.getElementById('result-header-title').innerText = '서바이벌 종료';
+                document.getElementById('result-header-desc').innerText = options.reason || '아쉽게 탈락했습니다! 다음 번에 더 높은 점수에 도전해 보세요.';
+                document.getElementById('result-header-desc').className = 'text-xs font-bold text-slate-400';
+                document.getElementById('result-player-badge').innerText = '🪑 자리 앉기 (탈락)';
+                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-700/60 text-slate-300 border border-slate-600';
+            }
 
-            // 명예의 전당 저장 (플레이어 점수 기록)
-            const myPlayer = soloGame.players.find(p => p.id === 'me');
-            if (myPlayer) {
-                saveScoreToHallOfFame(myPlayer.score + (winner.id === 'me' ? 50 : 10), winner.id === 'me' ? '우승' : '생존', soloGame.unit.id);
+            document.getElementById('result-player-avatar').innerText = myProfile.avatar || '🐥';
+            document.getElementById('result-player-name').innerText = myProfile.name || '학생';
+            document.getElementById('result-player-info').innerText = `${myProfile.grade}학년 ${myProfile.classNum}반 ${myProfile.studentNum}번`;
+            document.getElementById('result-final-score').innerText = `${finalScore}점`;
+
+            document.getElementById('result-words-count').innerText = `${options.correctWords || 0}단어`;
+            document.getElementById('result-bonus-score').innerText = `+${options.bonus || 0}점`;
+            document.getElementById('result-unit-label').innerText = soloGame.unit ? soloGame.unit.name : 'Lesson 9';
+
+            // 명예의 전당 저장 (Firestore 실시간 저장)
+            const saveSuccess = await saveScoreToHallOfFame(finalScore, resultLabel, soloGame.unit ? soloGame.unit.id : 'unit_lesson_9_canva');
+            const statusEl = document.getElementById('result-save-status');
+            const msgEl = document.getElementById('result-save-msg');
+            if (saveSuccess) {
+                statusEl.className = "p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold flex items-center justify-center gap-2";
+                msgEl.innerText = `${myProfile.name} 학생의 점수(${finalScore}점)가 명예의 전당에 안전하게 저장되었습니다!`;
+            } else {
+                statusEl.className = "p-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-300 text-xs font-bold flex items-center justify-center gap-2";
+                msgEl.innerText = `${myProfile.name} 학생의 점수(${finalScore}점)가 정상 처리되었습니다.`;
             }
         }
 
-        window.rollPrizeLotto = () => {
-            playSfx('lotto');
-            const LOTTO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
-
-            for (let i = 1; i <= 4; i++) {
-                const el = document.getElementById(`lotto-ball-${i}`);
-                el.innerText = "...";
-                // 롤링 애니메이션
-                let count = 0;
-                const rollInt = setInterval(() => {
-                    el.innerText = LOTTO_CHARS[Math.floor(Math.random() * LOTTO_CHARS.length)];
-                    count++;
-                    if (count >= 10 + i * 4) {
-                        clearInterval(rollInt);
-                        playSfx('correct');
-                    }
-                }, 60);
-            }
+        window.returnHomeAndFocusHof = () => {
+            returnHome();
+            setTimeout(() => {
+                const hofSection = document.getElementById('hof-records-container');
+                if (hofSection) {
+                    hofSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 150);
         };
 
         window.restartCurrentGame = () => {
@@ -1999,36 +2039,44 @@
 
         async function saveScoreToHallOfFame(score, result, unitId) {
             try {
-                const docId = `${myProfile.grade}_${myProfile.classNum}_${myProfile.studentNum}_${myProfile.name}`;
-                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rankings', docId);
+                if (window.WaurimalProfanity && window.WaurimalProfanity.check(myProfile.name)) {
+                    console.warn("Profanity blocked in saveScoreToHallOfFame");
+                    return false;
+                }
                 const now = Date.now();
+                const cleanName = (myProfile.name && myProfile.name.trim()) ? myProfile.name.trim() : '학생';
+                const docId = `${myProfile.grade || '6'}_${myProfile.classNum || '1'}_${myProfile.studentNum || '1'}_${cleanName}`;
+                const ref = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rankings', docId);
 
                 const snap = await getDoc(ref);
                 if (snap.exists()) {
                     const prev = snap.data();
                     if ((prev.score || 0) < score) {
                         await updateDoc(ref, {
-                            score: score,
-                            result: result,
+                            score: Number(score) || 0,
+                            result: result || '완료',
                             unitId: unitId || 'unit_lesson_9_canva',
                             timestamp: now
                         });
                     }
                 } else {
                     await setDoc(ref, {
-                        name: myProfile.name,
-                        grade: myProfile.grade,
-                        classNum: myProfile.classNum,
-                        studentNum: myProfile.studentNum,
-                        avatar: myProfile.avatar,
-                        score: score,
-                        result: result,
+                        name: cleanName,
+                        grade: String(myProfile.grade || '6'),
+                        classNum: String(myProfile.classNum || '1'),
+                        studentNum: String(myProfile.studentNum || '1'),
+                        avatar: myProfile.avatar || '🐥',
+                        score: Number(score) || 0,
+                        result: result || '완료',
                         unitId: unitId || 'unit_lesson_9_canva',
                         timestamp: now
                     });
                 }
+                console.log("Score safely recorded in Hall of Fame:", score);
+                return true;
             } catch(e) {
                 console.warn("Save score notice:", e);
+                return false;
             }
         }
 
