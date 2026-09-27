@@ -31,8 +31,8 @@
 
         body {
             font-family: var(--font-main);
-            background: #0f172a;
-            color: #f8fafc;
+            background: #f8fafc;
+            color: #1e293b;
             min-height: 100vh;
             margin: 0;
             padding: 0;
@@ -45,17 +45,17 @@
 
         /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); border-radius: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Card Styles */
+        /* Card Styles: Waurimal Light High-Contrast */
         .sparkle-card {
-            background: rgba(30, 41, 59, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 1.25rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            color: #1e293b;
         }
 
         /* Pulse Animation */
@@ -86,12 +86,12 @@
 
         /* Arena Circle Layout */
         .avatar-ring-turn {
-            box-shadow: 0 0 0 4px #fbbf24, 0 0 20px #f59e0b;
+            box-shadow: 0 0 0 3px #ec4899, 0 0 18px rgba(236, 72, 153, 0.4);
             animation: ring-pulse 1s infinite alternate;
         }
         @keyframes ring-pulse {
-            from { transform: scale(1); box-shadow: 0 0 0 3px #fbbf24, 0 0 15px #f59e0b; }
-            to { transform: scale(1.08); box-shadow: 0 0 0 5px #fbbf24, 0 0 25px #fbbf24; }
+            from { transform: scale(1); box-shadow: 0 0 0 3px #ec4899, 0 0 12px rgba(236, 72, 153, 0.3); }
+            to { transform: scale(1.05); box-shadow: 0 0 0 4px #db2777, 0 0 20px rgba(219, 39, 119, 0.5); }
         }
 
         /* Blind Word Shimmer */
@@ -107,12 +107,12 @@
     </style>
 </head>
 
-<body class="bg-slate-950 text-slate-100 flex flex-col min-h-screen">
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
 
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <!-- 상단 글로벌 네비게이션 헤더 -->
+    <!-- 상단 글로벌 네비게이션 헤더 (홈 전용 - 게임 중 자동 숨김) -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+    <header id="main-header" class="bg-white/95 border-b border-slate-200 sticky top-0 z-40 backdrop-blur-md shadow-xs">
         <div class="max-w-6xl mx-auto px-3 sm:px-4 py-1.5 flex items-center justify-between">
             <div class="flex items-center gap-2.5 cursor-pointer" onclick="returnHome()">
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-pink-500/30 text-base font-black">
@@ -120,23 +120,23 @@
                 </div>
                 <div>
                     <div class="flex items-center gap-1.5">
-                        <span class="font-game text-lg font-black tracking-wide bg-gradient-to-r from-pink-400 via-rose-300 to-amber-300 bg-clip-text text-transparent">Sparkle DIE</span>
-                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">DOWN!</span>
+                        <span class="font-game text-lg font-black tracking-wide bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 bg-clip-text text-transparent">Sparkle DIE</span>
+                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-pink-100 text-pink-700 border border-pink-200">DOWN!</span>
                     </div>
                 </div>
             </div>
 
             <!-- 우측 유저 프로필 & 사운드 & 도움말 -->
             <div class="flex items-center gap-1.5">
-                <button type="button" onclick="toggleSound()" id="btn-sound-toggle" class="p-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-xs flex items-center gap-1" title="음향 On/Off">
-                    <i class="fas fa-volume-up text-amber-400" id="sound-icon"></i>
+                <button type="button" onclick="toggleSound()" id="btn-sound-toggle" class="p-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition text-xs flex items-center gap-1 cursor-pointer" title="음향 On/Off">
+                    <i class="fas fa-volume-up text-amber-500" id="sound-icon"></i>
                 </button>
-                <button type="button" onclick="openRulesModal()" class="p-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition text-xs font-bold flex items-center gap-1">
-                    <i class="fas fa-book-open text-pink-400"></i> 규칙
+                <button type="button" onclick="openRulesModal()" class="p-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition text-xs font-bold flex items-center gap-1 cursor-pointer">
+                    <i class="fas fa-book-open text-pink-500"></i> 규칙
                 </button>
-                <button type="button" onclick="openProfileModal()" class="flex items-center gap-1.5 py-1 px-2.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 rounded-lg transition cursor-pointer">
+                <button type="button" onclick="openProfileModal()" class="flex items-center gap-1.5 py-1 px-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition cursor-pointer text-slate-700">
                     <span id="nav-user-avatar" class="text-base">🐥</span>
-                    <span id="nav-user-name" class="text-xs font-bold text-slate-200">학생 정보</span>
+                    <span id="nav-user-name" class="text-xs font-bold text-slate-800">학생 정보</span>
                     <i class="fas fa-edit text-[9px] text-slate-400"></i>
                 </button>
             </div>
@@ -146,7 +146,7 @@
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
     <!-- 메인 컨테이너 (상단 밀착 배치) -->
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 pt-1 sm:pt-2 pb-6 flex flex-col justify-start">
+    <main id="main-container" class="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 pt-1 sm:pt-2 pb-6 flex flex-col justify-start">
 
         <!-- ───────────────────────────────────────────────────────────────── -->
         <!-- 1. 홈 화면 (Mode Selection & Hall of Fame 50:50) -->
@@ -159,28 +159,28 @@
                 <!-- 게임 모드 선택 탭 카드 -->
                 <div class="sparkle-card p-5 space-y-4">
                     <!-- 유저 정보 배너 -->
-                    <div class="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/60">
+                    <div class="flex items-center justify-between p-3 bg-pink-50/70 rounded-xl border border-pink-200/80">
                         <div class="flex items-center gap-3">
-                            <span id="home-avatar" class="text-3xl p-1.5 bg-slate-700/60 rounded-xl border border-slate-600">🐥</span>
+                            <span id="home-avatar" class="text-3xl p-1 bg-white rounded-xl border border-pink-200 shadow-2xs">🐥</span>
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <span id="home-name" class="font-black text-slate-100 text-sm">학생 이름</span>
-                                    <span id="home-grade-class" class="text-xs font-bold text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/30">학년 반 번</span>
+                                    <span id="home-name" class="font-black text-slate-900 text-sm">학생 이름</span>
+                                    <span id="home-grade-class" class="text-xs font-bold text-pink-700 bg-pink-100 px-2 py-0.5 rounded-full border border-pink-300">학년 반 번</span>
                                 </div>
-                                <div class="text-[11px] text-slate-400 mt-0.5">서바이벌 생존 기록과 랭킹이 저장됩니다.</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">서바이벌 생존 기록과 랭킹이 실시간 저장됩니다.</div>
                             </div>
                         </div>
-                        <button type="button" onclick="openProfileModal()" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold text-slate-200 transition">
+                        <button type="button" onclick="openProfileModal()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 transition shadow-2xs cursor-pointer">
                             프로필 변경
                         </button>
                     </div>
 
                     <!-- 모드 선택 탭 버튼 (혼자하기 vs 실시간 멀티플레이) -->
-                    <div class="flex gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
-                        <button type="button" id="tab-btn-solo" onclick="switchHomeTab('solo')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30">
+                    <div class="flex gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                        <button type="button" id="tab-btn-solo" onclick="switchHomeTab('solo')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30 cursor-pointer">
                             <i class="fas fa-robot"></i> 혼자하기 (개인전 AI 배틀)
                         </button>
-                        <button type="button" id="tab-btn-multi" onclick="switchHomeTab('multi')" class="flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+                        <button type="button" id="tab-btn-multi" onclick="switchHomeTab('multi')" class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200 cursor-pointer">
                             <i class="fas fa-users"></i> 실시간 멀티플레이 (학급 대결)
                         </button>
                     </div>
@@ -189,18 +189,18 @@
                     <div id="home-tab-solo" class="space-y-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-bold text-slate-300 mb-1">
-                                    <i class="fas fa-book text-pink-400 mr-1"></i> 플레이 단원 선택
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    <i class="fas fa-book text-pink-500 mr-1"></i> 플레이 단원 선택
                                 </label>
-                                <select id="solo-unit-select" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 outline-none focus:ring-2 focus:ring-pink-500">
+                                <select id="solo-unit-select" class="w-full p-2.5 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                                     <!-- 동적 로드 -->
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-300 mb-1">
-                                    <i class="fas fa-stopwatch text-amber-400 mr-1"></i> 암기 및 턴 난이도
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    <i class="fas fa-stopwatch text-amber-500 mr-1"></i> 암기 및 턴 난이도
                                 </label>
-                                <select id="solo-difficulty-select" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 outline-none focus:ring-2 focus:ring-pink-500">
+                                <select id="solo-difficulty-select" class="w-full p-2.5 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                                     <option value="easy">🌱 쉬움 (암기 8초 / 턴 6초)</option>
                                     <option value="normal" selected>⚡ 보통 (암기 6초 / 턴 5초)</option>
                                     <option value="hard">🔥 도전 (암기 4초 / 턴 4초)</option>
@@ -209,18 +209,30 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-300 mb-1">
-                                <i class="fas fa-users-viewfinder text-purple-400 mr-1"></i> 함께할 AI 봇 인원
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                <i class="fas fa-users-viewfinder text-purple-600 mr-1"></i> 함께할 AI 봇 인원
                             </label>
-                            <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                                <label class="p-2 bg-slate-800/80 border border-slate-700 rounded-xl cursor-pointer hover:border-pink-500 flex items-center justify-center gap-1.5 has-[:checked]:bg-pink-600 has-[:checked]:text-white has-[:checked]:border-pink-500">
-                                    <input type="radio" name="solo-bots" value="4" class="hidden"> 4명 서바이벌
+                            <div class="grid grid-cols-3 gap-2.5 text-center text-xs">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="solo-bots" value="4" class="peer sr-only">
+                                    <div class="py-2.5 px-2 sm:px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 font-extrabold peer-checked:bg-pink-600 peer-checked:text-white peer-checked:border-pink-600 transition shadow-2xs flex items-center justify-center gap-1.5 hover:border-pink-400 hover:text-pink-600 peer-checked:hover:text-white">
+                                        <i class="fas fa-user-friends text-xs"></i>
+                                        <span>4명 서바이벌</span>
+                                    </div>
                                 </label>
-                                <label class="p-2 bg-slate-800/80 border border-slate-700 rounded-xl cursor-pointer hover:border-pink-500 flex items-center justify-center gap-1.5 has-[:checked]:bg-pink-600 has-[:checked]:text-white has-[:checked]:border-pink-500">
-                                    <input type="radio" name="solo-bots" value="6" checked class="hidden"> 6명 서바이벌
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="solo-bots" value="6" checked class="peer sr-only">
+                                    <div class="py-2.5 px-2 sm:px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 font-extrabold peer-checked:bg-pink-600 peer-checked:text-white peer-checked:border-pink-600 transition shadow-2xs flex items-center justify-center gap-1.5 hover:border-pink-400 hover:text-pink-600 peer-checked:hover:text-white">
+                                        <i class="fas fa-users text-xs"></i>
+                                        <span>6명 서바이벌</span>
+                                    </div>
                                 </label>
-                                <label class="p-2 bg-slate-800/80 border border-slate-700 rounded-xl cursor-pointer hover:border-pink-500 flex items-center justify-center gap-1.5 has-[:checked]:bg-pink-600 has-[:checked]:text-white has-[:checked]:border-pink-500">
-                                    <input type="radio" name="solo-bots" value="8" class="hidden"> 8명 서바이벌
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="solo-bots" value="8" class="peer sr-only">
+                                    <div class="py-2.5 px-2 sm:px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 font-extrabold peer-checked:bg-pink-600 peer-checked:text-white peer-checked:border-pink-600 transition shadow-2xs flex items-center justify-center gap-1.5 hover:border-pink-400 hover:text-pink-600 peer-checked:hover:text-white">
+                                        <i class="fas fa-fire text-xs"></i>
+                                        <span>8명 서바이벌</span>
+                                    </div>
                                 </label>
                             </div>
                         </div>
@@ -234,22 +246,22 @@
                     <!-- ── TAB 2: 실시간 멀티플레이 (Multiplayer Mode) 설정 ── -->
                     <div id="home-tab-multi" class="hidden space-y-4">
                         <!-- 방 만들기 섹션 -->
-                        <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/60 space-y-3">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                             <div class="flex items-center justify-between">
-                                <span class="font-bold text-xs text-pink-300 flex items-center gap-1.5">
-                                    <i class="fas fa-crown text-amber-400"></i> 새로운 방 만들기 (호스트)
+                                <span class="font-bold text-xs text-pink-700 flex items-center gap-1.5">
+                                    <i class="fas fa-crown text-amber-500"></i> 새로운 방 만들기 (호스트)
                                 </span>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">단원 선택</label>
-                                    <select id="multi-unit-select" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200 outline-none">
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">단원 선택</label>
+                                    <select id="multi-unit-select" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                                         <!-- 동적 로드 -->
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-400 mb-1">문장 암기 시간</label>
-                                    <select id="multi-time-select" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200 outline-none">
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">문장 암기 시간</label>
+                                    <select id="multi-time-select" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                                         <option value="8">8초 (초급 권장)</option>
                                         <option value="6" selected>6초 (표준)</option>
                                         <option value="5">5초 (스피드)</option>
@@ -263,39 +275,38 @@
                         </div>
 
                         <!-- 방 참여하기 섹션 -->
-                        <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700/60 space-y-3">
-                            <span class="font-bold text-xs text-amber-300 flex items-center gap-1.5">
-                                <i class="fas fa-door-open text-amber-400"></i> 참여 코드로 방 입장하기
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                            <span class="font-bold text-xs text-amber-700 flex items-center gap-1.5">
+                                <i class="fas fa-door-open text-amber-500"></i> 참여 코드로 방 입장하기
                             </span>
                             <div class="flex gap-2">
-                                <input type="text" id="multi-room-input" placeholder="참여 코드 4자리 (예: 7B2K)" maxlength="4" class="flex-1 p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-center text-base font-black tracking-widest text-pink-300 outline-none uppercase focus:ring-2 focus:ring-pink-500">
+                                <input type="text" id="multi-room-input" placeholder="참여 코드 4자리 (예: 7B2K)" maxlength="4" class="flex-1 p-2.5 bg-white border-2 border-slate-300 rounded-xl text-center text-base font-black tracking-widest text-pink-600 outline-none uppercase focus:border-pink-500">
                                 <button type="button" onclick="joinMultiRoom()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
                                     <i class="fas fa-sign-in-alt"></i>
                                     <span>입장</span>
                                 </button>
                             </div>
-                            <div id="multi-join-msg" class="text-[11px] text-rose-400 font-bold min-h-[16px] text-center"></div>
+                            <div id="multi-join-msg" class="text-[11px] text-rose-600 font-bold min-h-[16px] text-center"></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 게임 특징 & 규칙 안내 카드 (Canva 룰 완벽 반영) -->
-                <div class="sparkle-card p-4 space-y-2.5 bg-gradient-to-br from-slate-900 to-slate-800/70">
+                <div class="sparkle-card p-4 space-y-2 bg-gradient-to-br from-pink-50/40 via-white to-amber-50/30 border border-slate-200">
                     <div class="flex items-center gap-2">
                         <span class="text-base">💡</span>
-                        <h3 class="font-black text-slate-200 text-xs">Sparkle DIE 핵심 규칙 (Canva Standard)</h3>
+                        <h3 class="font-black text-slate-800 text-xs">Sparkle DIE 핵심 규칙 (Canva Standard)</h3>
                     </div>
-                    <ul class="text-[11px] text-slate-300 space-y-1.5 leading-relaxed">
+                    <ul class="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
                         <li>• <strong>1. 문장 암기</strong>: 화면에 나타난 영어 문장을 주어진 시간 동안 모두 집중하여 암기합니다.</li>
-                        <li>• <strong>2. 한 단어씩 릴레이</strong>: 순서대로 돌아가며 문장의 단어를 한 단어씩 말합니다. 틀리거나 지체되면 즉시 탈락!</li>
+                        <li>• <strong>2. 한 단어씩 릴레이</strong>: 순서대로 돌아가며 문장의 단어를 한 단어씩 맞춥니다. 틀리거나 지체되면 즉시 탈락!</li>
                         <li>• <strong>3. 트리거 폭탄</strong>: 문장이 끝나면 <strong>✨ Sparkle!</strong> ➔ <strong>💀 Die!</strong> ➔ <strong>🪑 Down! (탈락)</strong> 순서로 외칩니다.</li>
                         <li>• <strong>4. Skip 찬스</strong>: 화면에 Skip 배지가 있으면 본인 차례를 안전하게 넘길 수 있습니다 (첫 단어 제외).</li>
-                        <li>• <strong>5. 상품 로또</strong>: 최후의 생존자들을 위한 짜릿한 3D 행운의 로또 번호 추첨이 펼쳐집니다!</li>
                     </ul>
 
                     <!-- 교사 모드 진입 링크 -->
-                    <div class="pt-2 border-t border-slate-800 text-center">
-                        <button type="button" onclick="openTeacherModal()" class="text-xs font-bold text-slate-400 hover:text-slate-200 transition">
+                    <div class="pt-2 border-t border-slate-200 text-center">
+                        <button type="button" onclick="openTeacherModal()" class="text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer">
                             <i class="fas fa-cog"></i> 교사 설정 모드 (단원 문장 추가·수정 & 명예의 전당 관리)
                         </button>
                     </div>
@@ -305,47 +316,47 @@
             <!-- [우측 5컬럼]: 실시간 명예의 전당 (Top 30 표준 규격) -->
             <div class="lg:col-span-5 flex flex-col h-full">
                 <div class="sparkle-card p-4 flex flex-col h-full space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-200">
                         <div class="flex items-center gap-2">
                             <span class="text-xl">🏆</span>
-                            <span class="font-black text-sm text-slate-100">명예의 전당</span>
-                            <span class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <span class="font-black text-sm text-slate-900">명예의 전당</span>
+                            <span class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 border border-emerald-300">
                                 <span class="live-dot"></span> LIVE
                             </span>
                         </div>
-                        <span class="text-[10px] text-slate-400 font-bold">Top 30 랭킹</span>
+                        <span class="text-[10px] text-slate-500 font-bold">Top 30 랭킹</span>
                     </div>
 
                     <!-- 1. 기간 선택 탭 (단어타자연습 표준 동일) -->
-                    <div class="hof-period-tabs flex gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800">
-                        <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-pink-700 shadow-2xs" id="hof-tab-all" onclick="setHofPeriod('all')">
+                    <div class="hof-period-tabs flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                        <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-black rounded-lg transition-all bg-white text-pink-700 shadow-2xs border border-pink-200 cursor-pointer" id="hof-tab-all" onclick="setHofPeriod('all')">
                             <i class="fas fa-infinity"></i> 전체
                         </button>
-                        <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200" id="hof-tab-month" onclick="setHofPeriod('month')">
+                        <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer" id="hof-tab-month" onclick="setHofPeriod('month')">
                             <i class="fas fa-calendar-alt"></i> 이번 달
                         </button>
-                        <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200" id="hof-tab-week" onclick="setHofPeriod('week')">
+                        <button type="button" class="hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer" id="hof-tab-week" onclick="setHofPeriod('week')">
                             <i class="fas fa-fire"></i> 이번 주
                         </button>
                     </div>
 
                     <!-- 2. 단원별 필터 -->
                     <div>
-                        <select id="hof-filter-unit" onchange="filterHofList()" class="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:ring-2 focus:ring-pink-500">
+                        <select id="hof-filter-unit" onchange="filterHofList()" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                             <option value="ALL">전체 단원/주제</option>
                         </select>
                     </div>
 
                     <!-- 3. 학년 및 반 필터 -->
                     <div class="grid grid-cols-2 gap-2">
-                        <select id="hof-filter-grade" onchange="filterHofList()" class="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:ring-2 focus:ring-pink-500">
+                        <select id="hof-filter-grade" onchange="filterHofList()" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                             <option value="ALL">전체 학년</option>
                             <option value="3">3학년</option>
                             <option value="4">4학년</option>
                             <option value="5">5학년</option>
                             <option value="6">6학년</option>
                         </select>
-                        <select id="hof-filter-class" onchange="filterHofList()" class="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs font-bold text-slate-200 outline-none focus:ring-2 focus:ring-pink-500">
+                        <select id="hof-filter-class" onchange="filterHofList()" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                             <option value="ALL">전체 반</option>
                             <option value="1">1반</option><option value="2">2반</option>
                             <option value="3">3반</option><option value="4">4반</option>
@@ -373,28 +384,28 @@
         <!-- 2. 대기실 화면 (Multiplayer Lobby) -->
         <!-- ───────────────────────────────────────────────────────────────── -->
         <div id="screen-lobby" class="hidden max-w-2xl mx-auto w-full space-y-4">
-            <div class="sparkle-card p-6 text-center space-y-4">
+            <div class="sparkle-card p-6 text-center space-y-4 bg-white border border-slate-200">
                 <div class="flex items-center justify-between">
-                    <button type="button" onclick="leaveMultiRoom()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition">
+                    <button type="button" onclick="leaveMultiRoom()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-bold transition cursor-pointer">
                         <i class="fas fa-arrow-left"></i> 나가기
                     </button>
-                    <span class="text-xs font-bold text-pink-400 flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-pink-700 flex items-center gap-1.5">
                         <span class="live-dot"></span> 실시간 대기실
                     </span>
                     <div class="w-16"></div>
                 </div>
 
                 <div>
-                    <div class="text-xs text-slate-400 font-bold mb-1">친구들에게 아래 참여 코드를 알려주세요!</div>
-                    <div id="lobby-room-code" class="font-game text-4xl font-black text-pink-400 tracking-widest bg-slate-900 py-3 rounded-2xl border-2 border-pink-500/40 shadow-inner">
+                    <div class="text-xs text-slate-500 font-bold mb-1">친구들에게 아래 참여 코드를 알려주세요!</div>
+                    <div id="lobby-room-code" class="font-game text-4xl font-black text-pink-600 tracking-widest bg-pink-50 py-3 rounded-2xl border-2 border-pink-300 shadow-inner">
                         ----
                     </div>
                 </div>
 
                 <div class="text-left space-y-2">
-                    <div class="flex items-center justify-between text-xs font-bold text-slate-300">
-                        <span><i class="fas fa-users text-pink-400 mr-1"></i> 접속한 플레이어 (<span id="lobby-player-count">0</span>명)</span>
-                        <span id="lobby-unit-name" class="text-amber-300">단원명</span>
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span><i class="fas fa-users text-pink-500 mr-1"></i> 접속한 플레이어 (<span id="lobby-player-count">0</span>명)</span>
+                        <span id="lobby-unit-name" class="text-amber-600">단원명</span>
                     </div>
                     <!-- 접속자 그리드 -->
                     <div id="lobby-player-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto custom-scrollbar p-1">
@@ -408,59 +419,65 @@
                         <i class="fas fa-play mr-1.5"></i> 게임 시작하기
                     </button>
                 </div>
-                <div id="lobby-guest-waiting" class="hidden text-xs text-amber-400 font-bold py-3 animate-pulse">
+                <div id="lobby-guest-waiting" class="hidden text-xs text-amber-700 font-bold py-3 animate-pulse">
                     <i class="fas fa-hourglass-half mr-1"></i> 방장이 게임을 시작하기를 기다리고 있습니다...
                 </div>
             </div>
         </div>
 
         <!-- ───────────────────────────────────────────────────────────────── -->
-        <!-- 3. 실시간 게임 플레이 화면 (Game Board Screen) -->
+        <!-- 3. 실시간 게임 플레이 화면 (Game Board Screen - 상단 밀착) -->
         <!-- ───────────────────────────────────────────────────────────────── -->
-        <div id="screen-game" class="hidden max-w-4xl mx-auto w-full space-y-2.5">
+        <div id="screen-game" class="hidden max-w-4xl mx-auto w-full space-y-2">
             
-            <!-- 상단 상태 표시줄 -->
-            <div class="sparkle-card px-3.5 py-2 flex items-center justify-between flex-wrap gap-2 text-xs font-bold">
-                <div class="flex items-center gap-2.5">
-                    <span id="game-round-badge" class="px-2 py-0.5 rounded-lg bg-pink-500/20 text-pink-300 border border-pink-500/40 font-game">Round 1/10</span>
-                    <span id="game-unit-title" class="text-slate-300 max-w-[200px] truncate">Lesson 9 Sparkle DIE</span>
+            <!-- 상단 상태 표시줄 (컴팩트 & 완벽한 상단 밀착) -->
+            <div class="sparkle-card px-3.5 py-1.5 flex items-center justify-between flex-wrap gap-2 text-xs font-bold bg-white border border-slate-200 shadow-2xs">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="confirmExitGame()" class="px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 rounded-lg transition flex items-center gap-1 font-bold cursor-pointer" title="게임 나가기">
+                        <i class="fas fa-arrow-left text-[10px]"></i> 나가기
+                    </button>
+                    <span id="game-round-badge" class="px-2.5 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200 font-game font-black text-xs">Round 1/10</span>
+                    <span id="game-unit-title" class="text-slate-800 font-bold max-w-[180px] truncate">Lesson 9 Sparkle DIE</span>
                 </div>
-                <div class="flex items-center gap-2.5">
-                    <span id="game-skip-badge" class="hidden px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                        <i class="fas fa-bolt text-amber-400"></i> SKIP 찬스 가능!
+                <div class="flex items-center gap-2">
+                    <span id="game-skip-badge" class="hidden px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 font-bold text-xs">
+                        <i class="fas fa-bolt text-amber-500"></i> SKIP 가능!
                     </span>
-                    <span class="text-slate-400">
-                        생존자: <span id="game-alive-count" class="text-emerald-400 font-black">6</span>명
+                    <span class="text-slate-600 font-bold text-xs">
+                        생존자: <span id="game-alive-count" class="text-emerald-600 font-black">6</span>명
                     </span>
-                    <button type="button" onclick="confirmExitGame()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-rose-400 rounded-lg transition">
-                        <i class="fas fa-times"></i>
+                    <button type="button" onclick="toggleSound()" class="p-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition text-xs flex items-center gap-1 cursor-pointer" title="음향 On/Off">
+                        <i class="fas fa-volume-up text-amber-500" id="game-sound-icon"></i>
+                    </button>
+                    <button type="button" onclick="openRulesModal()" class="p-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition text-xs font-bold flex items-center gap-1 cursor-pointer" title="규칙 보기">
+                        <i class="fas fa-book-open text-pink-500"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- 플레이어 아레나 (참가자 원형/그리드 카드) -->
-            <div id="game-arena" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <!-- 플레이어 아레나 (참가자 원형/그리드 카드: 컴팩트 고대비) -->
+            <div id="game-arena" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
                 <!-- 동적 렌더링 (아바타, 이름, 턴 하이라이트, 탈락 상태) -->
             </div>
 
             <!-- 중앙 메인 칠판 보드 -->
-            <div class="sparkle-card p-4 sm:p-5 text-center space-y-3 relative overflow-hidden">
+            <div class="sparkle-card p-3 sm:p-4 text-center space-y-2 relative overflow-hidden bg-white border border-slate-200 shadow-sm">
                 
                 <!-- 타이머 바 & 시간 게이지 -->
                 <div class="space-y-1">
-                    <div class="flex justify-between items-center text-xs font-bold text-slate-400">
-                        <span id="game-phase-label" class="text-pink-400 font-black">🧠 문장을 집중해서 암기하세요!</span>
-                        <span class="font-game text-sm text-amber-400"><span id="game-timer-seconds">6</span>초</span>
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-600">
+                        <span id="game-phase-label" class="text-pink-600 font-black">🧠 문장을 집중해서 암기하세요!</span>
+                        <span class="font-game text-sm text-amber-600"><span id="game-timer-seconds">6</span>초</span>
                     </div>
-                    <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div id="game-timer-bar" class="h-full bg-gradient-to-r from-pink-500 to-amber-400 transition-all duration-100" style="width: 100%;"></div>
+                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div id="game-timer-bar" class="h-full bg-gradient-to-r from-pink-500 to-amber-500 transition-all duration-100" style="width: 100%;"></div>
                     </div>
                 </div>
 
-                <!-- 문장 디스플레이 영역 (암기 모드 vs 블라인드 릴레이 모드) -->
-                <div id="game-sentence-board" class="min-h-[105px] flex flex-col justify-center items-center p-3.5 bg-slate-900/90 rounded-2xl border-2 border-slate-800 space-y-2">
+                <!-- 문장 디스플레이 영역 (집중도 높은 칠판 보드) -->
+                <div id="game-sentence-board" class="min-h-[85px] flex flex-col justify-center items-center p-3 sm:p-4 bg-slate-900 rounded-2xl border-2 border-slate-800 space-y-2 shadow-inner">
                     <!-- 암기 문장 노출 -->
-                    <div id="memorize-sentence-text" class="text-xl sm:text-2xl md:text-3xl font-black text-slate-100 tracking-wide font-game leading-snug">
+                    <div id="memorize-sentence-text" class="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide font-game leading-snug">
                         Loading sentence...
                     </div>
                     <div id="memorize-sentence-kr" class="text-xs sm:text-sm text-pink-300 font-bold">
@@ -474,23 +491,23 @@
                 </div>
 
                 <!-- ── 플레이어 턴 컨트롤 영역 ── -->
-                <div id="game-turn-controls" class="space-y-2.5 pt-1">
+                <div id="game-turn-controls" class="space-y-2 pt-0.5">
                     
-                    <!-- 1) 일반 단어 턴: 선택지 버튼 3개 + Skip 버튼 -->
-                    <div id="turn-word-options" class="space-y-3">
-                        <div class="text-xs font-bold text-slate-300">
-                            다음 단어를 선택하거나 입력하세요:
+                    <!-- 1) 일반 단어 턴: 선택지 버튼 4개 + Skip 버튼 -->
+                    <div id="turn-word-options" class="space-y-2.5">
+                        <div class="text-xs font-bold text-slate-700">
+                            다음 단어를 선택하거나 직접 입력하세요:
                         </div>
-                        <div id="word-buttons-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl mx-auto">
+                        <div id="word-buttons-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-2xl mx-auto">
                             <!-- 단어 버튼 3~4개 동적 생성 -->
                         </div>
                         <!-- 타이핑 입력창 & Skip 버튼 -->
                         <div class="flex gap-2 max-w-md mx-auto">
-                            <input type="text" id="turn-word-input" placeholder="직접 영단어 입력 (선택)" class="flex-1 p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 outline-none focus:ring-2 focus:ring-pink-500">
-                            <button type="button" onclick="submitWordFromInput()" class="px-4 py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow transition">
+                            <input type="text" id="turn-word-input" placeholder="직접 영단어 입력 (선택)" class="flex-1 p-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
+                            <button type="button" onclick="submitWordFromInput()" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
                                 확인
                             </button>
-                            <button type="button" id="btn-turn-skip" onclick="useTurnSkip()" class="hidden px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-black text-xs rounded-xl shadow transition flex items-center gap-1 cursor-pointer">
+                            <button type="button" id="btn-turn-skip" onclick="useTurnSkip()" class="hidden px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer">
                                 <i class="fas fa-bolt"></i> SKIP
                             </button>
                         </div>
@@ -499,100 +516,99 @@
                     <!-- 2) 폭탄 트리거 버튼 (SPARKLE ➔ DIE ➔ DOWN) -->
                     <div id="turn-trigger-box" class="hidden space-y-3 max-w-md mx-auto">
                         <!-- SPARKLE 버튼 -->
-                        <button type="button" id="btn-trigger-sparkle" onclick="handleSparkleTrigger('sparkle')" class="hidden w-full py-4 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-400 hover:to-rose-400 text-white font-black text-2xl font-game rounded-2xl shadow-xl shadow-pink-500/40 transition transform active:scale-95 glow-sparkle cursor-pointer">
+                        <button type="button" id="btn-trigger-sparkle" onclick="handleSparkleTrigger('sparkle')" class="hidden w-full py-3.5 bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 hover:from-pink-400 hover:to-rose-400 text-white font-black text-xl sm:text-2xl font-game rounded-2xl shadow-xl shadow-pink-500/40 transition transform active:scale-95 glow-sparkle cursor-pointer">
                             ✨ SPARKLE! ✨
                         </button>
                         <!-- DIE 버튼 -->
-                        <button type="button" id="btn-trigger-die" onclick="handleSparkleTrigger('die')" class="hidden w-full py-4 bg-gradient-to-r from-red-600 via-rose-700 to-red-600 hover:from-red-500 hover:to-rose-600 text-white font-black text-2xl font-game rounded-2xl shadow-xl shadow-red-600/40 transition transform active:scale-95 glow-die cursor-pointer">
+                        <button type="button" id="btn-trigger-die" onclick="handleSparkleTrigger('die')" class="hidden w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xl sm:text-2xl font-game rounded-2xl shadow-xl shadow-red-600/40 transition transform active:scale-95 glow-die cursor-pointer">
                             💀 DIE! 💀
                         </button>
                         <!-- DOWN 버튼 -->
-                        <button type="button" id="btn-trigger-down" onclick="handleSparkleTrigger('down')" class="hidden w-full py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-2xl font-game rounded-2xl shadow-xl shadow-purple-600/40 transition transform active:scale-95 glow-down cursor-pointer">
+                        <button type="button" id="btn-trigger-down" onclick="handleSparkleTrigger('down')" class="hidden w-full py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-xl sm:text-2xl font-game rounded-2xl shadow-xl shadow-purple-600/40 transition transform active:scale-95 glow-down cursor-pointer">
                             🪑 DOWN! (자리 앉기) 🪑
                         </button>
                     </div>
 
                     <!-- 내 턴이 아닐 때 안내 메시지 -->
-                    <div id="turn-waiting-box" class="text-xs font-bold text-slate-400 py-3 flex items-center justify-center gap-2">
-                        <i class="fas fa-spinner fa-spin text-pink-400"></i>
-                        <span><span id="turn-current-player-name" class="text-pink-300 font-black">---</span> 님의 차례입니다...</span>
+                    <div id="turn-waiting-box" class="text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex items-center justify-center gap-2">
+                        <i class="fas fa-spinner fa-spin text-pink-500"></i>
+                        <span><span id="turn-current-player-name" class="text-pink-600 font-black">---</span> 님의 차례입니다...</span>
                     </div>
                 </div>
 
                 <!-- 하단 라이브 실황 알림 바 -->
-                <div id="game-live-feed" class="text-[11px] font-bold text-slate-400 bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                <div id="game-live-feed" class="text-[11px] font-bold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-200">
                     게임이 시작되었습니다!
                 </div>
             </div>
         </div>
 
         <!-- ───────────────────────────────────────────────────────────────── -->
-        <!-- ───────────────────────────────────────────────────────────────── -->
         <!-- 4. 게임 종료 및 성적 저장 화면 (Game Over & Score Result) -->
         <!-- ───────────────────────────────────────────────────────────────── -->
         <div id="screen-result" class="hidden max-w-xl mx-auto w-full space-y-4">
-            <div class="sparkle-card p-6 text-center space-y-5">
+            <div class="sparkle-card p-6 text-center space-y-4 bg-white border border-slate-200 shadow-md">
                 <!-- 결과 뱃지 & 타이틀 -->
                 <div class="space-y-1">
                     <span id="result-header-icon" class="text-5xl block mb-2">👑</span>
-                    <h2 id="result-header-title" class="text-2xl font-black text-slate-100">서바이벌 종료!</h2>
-                    <p id="result-header-desc" class="text-xs font-bold text-pink-400">최종 결과 및 성적 요약</p>
+                    <h2 id="result-header-title" class="text-2xl font-black text-slate-900">서바이벌 종료!</h2>
+                    <p id="result-header-desc" class="text-xs font-bold text-pink-600">최종 결과 및 성적 요약</p>
                 </div>
 
                 <!-- 플레이어 성적 카드 -->
-                <div class="p-5 bg-slate-900/90 rounded-2xl border border-slate-700 space-y-4 shadow-xl">
-                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 shadow-2xs">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
                         <div class="flex items-center gap-3">
                             <span id="result-player-avatar" class="text-3xl">🐥</span>
                             <div class="text-left">
-                                <div id="result-player-name" class="text-base font-black text-slate-100">홍길동</div>
-                                <div id="result-player-info" class="text-xs text-slate-400 font-bold">6학년 1반 12번</div>
+                                <div id="result-player-name" class="text-base font-black text-slate-900">홍길동</div>
+                                <div id="result-player-info" class="text-xs text-slate-500 font-bold">6학년 1반 12번</div>
                             </div>
                         </div>
-                        <span id="result-player-badge" class="px-3 py-1 rounded-full text-xs font-black bg-pink-500/20 text-pink-300 border border-pink-500/30">
+                        <span id="result-player-badge" class="px-3 py-1 rounded-full text-xs font-black bg-pink-100 text-pink-700 border border-pink-300">
                             우승
                         </span>
                     </div>
 
                     <!-- 대형 점수 표시 영역 -->
                     <div class="py-2">
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">최종 획득 점수</span>
-                        <div id="result-final-score" class="text-5xl font-black font-game text-amber-400 tracking-tight">100점</div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">최종 획득 점수</span>
+                        <div id="result-final-score" class="text-5xl font-black font-game text-amber-500 tracking-tight">100점</div>
                     </div>
 
                     <!-- 세부 성적 요약 그리드 -->
-                    <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800 text-center">
-                        <div class="p-2.5 bg-slate-950/60 rounded-xl">
-                            <span class="text-[10px] text-slate-400 font-bold block mb-0.5">맞힌 단어</span>
-                            <span id="result-words-count" class="text-xs font-black text-emerald-400 font-game">0단어</span>
+                    <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-200 text-center">
+                        <div class="p-2.5 bg-white border border-slate-200 rounded-xl">
+                            <span class="text-[10px] text-slate-500 font-bold block mb-0.5">맞힌 단어</span>
+                            <span id="result-words-count" class="text-xs font-black text-emerald-600 font-game">0단어</span>
                         </div>
-                        <div class="p-2.5 bg-slate-950/60 rounded-xl">
-                            <span class="text-[10px] text-slate-400 font-bold block mb-0.5">생존 보너스</span>
-                            <span id="result-bonus-score" class="text-xs font-black text-amber-300 font-game">+0점</span>
+                        <div class="p-2.5 bg-white border border-slate-200 rounded-xl">
+                            <span class="text-[10px] text-slate-500 font-bold block mb-0.5">생존 보너스</span>
+                            <span id="result-bonus-score" class="text-xs font-black text-amber-600 font-game">+0점</span>
                         </div>
-                        <div class="p-2.5 bg-slate-950/60 rounded-xl">
-                            <span class="text-[10px] text-slate-400 font-bold block mb-0.5">학습 단원</span>
-                            <span id="result-unit-label" class="text-[11px] font-black text-slate-300 truncate block">Lesson 9</span>
+                        <div class="p-2.5 bg-white border border-slate-200 rounded-xl">
+                            <span class="text-[10px] text-slate-500 font-bold block mb-0.5">학습 단원</span>
+                            <span id="result-unit-label" class="text-[11px] font-black text-slate-700 truncate block">Lesson 9</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- 명예의 전당 저장 상태 알림 -->
-                <div id="result-save-status" class="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold flex items-center justify-center gap-2">
-                    <i class="fas fa-check-circle text-emerald-400 text-sm"></i>
+                <div id="result-save-status" class="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-bold flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle text-emerald-600 text-sm"></i>
                     <span id="result-save-msg">성적이 명예의 전당에 실시간으로 안전하게 저장되었습니다!</span>
                 </div>
 
                 <!-- 액션 버튼 -->
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="returnHomeAndFocusHof()" class="py-3 bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-700">
-                        <i class="fas fa-trophy"></i> 명예의 전당 보기
+                    <button type="button" onclick="returnHomeAndFocusHof()" class="py-3 bg-slate-100 hover:bg-slate-200 text-amber-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-300 cursor-pointer">
+                        <i class="fas fa-trophy text-amber-500"></i> 명예의 전당 보기
                     </button>
-                    <button type="button" onclick="restartCurrentGame()" class="py-3 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5">
+                    <button type="button" onclick="restartCurrentGame()" class="py-3 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
                         <i class="fas fa-rotate-right"></i> 다시 도전하기
                     </button>
                 </div>
-                <button type="button" onclick="returnHome()" class="w-full py-2 text-slate-400 hover:text-slate-200 text-xs font-bold transition">
+                <button type="button" onclick="returnHome()" class="w-full py-2 text-slate-500 hover:text-slate-800 text-xs font-bold transition cursor-pointer">
                     <i class="fas fa-home"></i> 메인 화면으로 돌아가기
                 </button>
             </div>
@@ -605,13 +621,13 @@
     <!-- ═══════════════════════════════════════════════════════════════════════ -->
 
     <!-- 1. 학생 프로필 등록/수정 모달 -->
-    <div id="modal-profile" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="sparkle-card max-w-sm w-full p-5 space-y-4">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <span class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
-                    <i class="fas fa-user-edit text-pink-400"></i> 학생 정보 설정
+    <div id="modal-profile" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="sparkle-card max-w-sm w-full p-5 space-y-4 bg-white border border-slate-200 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                    <i class="fas fa-user-edit text-pink-600"></i> 학생 정보 설정
                 </span>
-                <button type="button" onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-200">
+                <button type="button" onclick="closeProfileModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -619,16 +635,16 @@
             <div class="space-y-3">
                 <!-- 아바타 선택 -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-300 mb-1">내 아바타 선택</label>
-                    <div id="avatar-picker" class="grid grid-cols-6 gap-2 text-2xl text-center p-2 bg-slate-900 rounded-xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">내 아바타 선택</label>
+                    <div id="avatar-picker" class="grid grid-cols-6 gap-2 text-2xl text-center p-2 bg-slate-50 rounded-xl border border-slate-200">
                         <!-- 동적 생성 -->
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">학년</label>
-                        <select id="input-prof-grade" name="grade" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">학년</label>
+                        <select id="input-prof-grade" name="grade" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                             <option value="3">3학년</option>
                             <option value="4">4학년</option>
                             <option value="5">5학년</option>
@@ -636,8 +652,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">반</label>
-                        <select id="input-prof-class" name="class" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">반</label>
+                        <select id="input-prof-class" name="class" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                             <option value="1" selected>1반</option><option value="2">2반</option>
                             <option value="3">3반</option><option value="4">4반</option>
                             <option value="5">5반</option><option value="6">6반</option>
@@ -649,94 +665,94 @@
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">번호</label>
-                        <input type="number" id="input-prof-num" name="studentNum" min="1" max="50" value="1" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">번호</label>
+                        <input type="number" id="input-prof-num" name="studentNum" min="1" max="50" value="1" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">이름</label>
-                        <input type="text" id="input-prof-name" name="studentName" placeholder="이름 입력" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">이름</label>
+                        <input type="text" id="input-prof-name" name="studentName" placeholder="이름 입력" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                     </div>
                 </div>
             </div>
 
-            <button type="button" onclick="saveProfile()" class="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-xl shadow transition">
+            <button type="button" onclick="saveProfile()" class="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-xl shadow transition cursor-pointer">
                 저장하기
             </button>
         </div>
     </div>
 
     <!-- 2. 게임 룰 설명 모달 -->
-    <div id="modal-rules" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="sparkle-card max-w-md w-full p-5 space-y-4">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <span class="font-bold text-sm text-pink-400 flex items-center gap-1.5">
+    <div id="modal-rules" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="sparkle-card max-w-md w-full p-5 space-y-4 bg-white border border-slate-200 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-sm text-pink-600 flex items-center gap-1.5">
                     <i class="fas fa-book-open"></i> Sparkle DIE 게임 방법
                 </span>
-                <button type="button" onclick="closeRulesModal()" class="text-slate-400 hover:text-slate-200">
+                <button type="button" onclick="closeRulesModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="text-xs text-slate-300 space-y-2.5 leading-relaxed max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
-                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-                    <div class="font-black text-pink-300">1. 문장 암기 (Memorize)</div>
+            <div class="text-xs text-slate-700 space-y-2.5 leading-relaxed max-h-[70vh] overflow-y-auto custom-scrollbar pr-1">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <div class="font-black text-pink-600">1. 문장 암기 (Memorize)</div>
                     <div>라운드가 시작되면 화면에 영어 문장이 나타납니다. 카운트다운 타이머가 끝날 때까지 모두 집중해서 문장의 단어 순서를 외우세요!</div>
                 </div>
-                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-                    <div class="font-black text-rose-300">2. 한 단어씩 릴레이 (Relay by Word)</div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <div class="font-black text-rose-600">2. 한 단어씩 릴레이 (Relay by Word)</div>
                     <div>시간이 끝나면 문장이 블라인드 처리됩니다. 차례가 돌아온 플레이어는 문장의 다음 단어를 맞춰야 합니다. 잘못된 단어를 고르거나 시간이 초과되면 즉시 탈락합니다!</div>
                 </div>
-                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-                    <div class="font-black text-amber-300">3. 폭탄 트리거 (SPARKLE ➔ DIE ➔ DOWN)</div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <div class="font-black text-amber-600">3. 폭탄 트리거 (SPARKLE ➔ DIE ➔ DOWN)</div>
                     <div>문장의 마지막 단어가 완성되면 다음 세 플레이어에게 폭탄이 돌아갑니다!</div>
-                    <ul class="text-[11px] text-slate-400 space-y-0.5 mt-1">
+                    <ul class="text-[11px] text-slate-600 space-y-0.5 mt-1">
                         <li>• 첫 번째 플레이어: <strong>✨ SPARKLE! ✨</strong> (생존)</li>
                         <li>• 두 번째 플레이어: <strong>💀 DIE! 💀</strong> (생존)</li>
                         <li>• 세 번째 플레이어: <strong>🪑 DOWN! 🪑 (탈락 / 자리 앉기)</strong></li>
                     </ul>
                 </div>
-                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
-                    <div class="font-black text-purple-300">4. Skip 찬스 & 상품 로또</div>
-                    <div>화면에 ⚡ Skip 마크가 있을 때는 자기 턴을 안전하게 다음 사람에게 넘길 수 있습니다 (첫 단어 제외). 최후의 승자에게는 🎰 3D 행운의 로또 추첨이 주어집니다!</div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <div class="font-black text-purple-600">4. Skip 찬스 & 명예의 전당</div>
+                    <div>화면에 ⚡ Skip 마크가 있을 때는 자기 턴을 안전하게 다음 사람에게 넘길 수 있습니다 (첫 단어 제외). 서바이벌에서 획득한 점수는 실시간으로 명예의 전당에 안전하게 기록됩니다!</div>
                 </div>
             </div>
-            <button type="button" onclick="closeRulesModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl transition">
+            <button type="button" onclick="closeRulesModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 cursor-pointer">
                 닫기
             </button>
         </div>
     </div>
 
     <!-- 3. 교사 설정 모드 모달 (단원 관리 & 성적 삭제) -->
-    <div id="modal-teacher" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="sparkle-card max-w-lg w-full p-5 space-y-4">
-            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
-                <span class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
-                    <i class="fas fa-chalkboard-teacher text-amber-400"></i> 교사 전용 관리 모드
+    <div id="modal-teacher" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="sparkle-card max-w-lg w-full p-5 space-y-4 bg-white border border-slate-200 shadow-2xl">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                    <i class="fas fa-chalkboard-teacher text-amber-500"></i> 교사 전용 관리 모드
                 </span>
-                <button type="button" onclick="closeTeacherModal()" class="text-slate-400 hover:text-slate-200">
+                <button type="button" onclick="closeTeacherModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
             <!-- 교사 비번 인증 -->
             <div id="teacher-auth-box" class="space-y-3">
-                <div class="text-xs text-slate-300">교사 비밀번호를 입력해주세요:</div>
+                <div class="text-xs text-slate-700">교사 비밀번호를 입력해주세요:</div>
                 <div class="flex gap-2">
-                    <input type="password" id="teacher-pwd-input" placeholder="비밀번호 (기본: 1234)" class="flex-1 p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200 outline-none">
-                    <button type="button" onclick="verifyTeacherPwd()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-lg transition">
+                    <input type="password" id="teacher-pwd-input" placeholder="비밀번호 (기본: 1234)" class="flex-1 p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
+                    <button type="button" onclick="verifyTeacherPwd()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-lg transition cursor-pointer">
                         인증
                     </button>
                 </div>
-                <div id="teacher-auth-msg" class="text-xs text-rose-400 font-bold"></div>
+                <div id="teacher-auth-msg" class="text-xs text-rose-600 font-bold"></div>
             </div>
 
             <!-- 교사 관리 패널 (인증 후 노출) -->
             <div id="teacher-panel-box" class="hidden space-y-4 text-xs">
                 <!-- 탭: 단원 문장 관리 / 명예의 전당 삭제 -->
-                <div class="flex gap-1 p-1 bg-slate-900 rounded-lg border border-slate-800">
-                    <button type="button" id="t-tab-units" onclick="switchTeacherTab('units')" class="flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white">
+                <div class="flex gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                    <button type="button" id="t-tab-units" onclick="switchTeacherTab('units')" class="flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer">
                         단원 및 문장 관리
                     </button>
-                    <button type="button" id="t-tab-hof" onclick="switchTeacherTab('hof')" class="flex-1 py-1.5 rounded text-xs font-bold text-slate-400 hover:text-slate-200">
+                    <button type="button" id="t-tab-hof" onclick="switchTeacherTab('hof')" class="flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
                         명예의 전당 기록 관리
                     </button>
                 </div>
@@ -745,26 +761,26 @@
                 <div id="t-view-units" class="space-y-3">
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <label class="font-bold text-slate-300">단원 선택 또는 새로 작성</label>
-                            <button type="button" onclick="prepareNewUnit()" class="text-pink-400 hover:underline font-bold">+ 새 단원 추가</button>
+                            <label class="font-bold text-slate-700">단원 선택 또는 새로 작성</label>
+                            <button type="button" onclick="prepareNewUnit()" class="text-pink-600 hover:underline font-bold cursor-pointer">+ 새 단원 추가</button>
                         </div>
-                        <select id="t-unit-dropdown" onchange="loadSelectedUnitToEdit()" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200">
+                        <select id="t-unit-dropdown" onchange="loadSelectedUnitToEdit()" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-slate-800 outline-none focus:border-pink-500">
                             <!-- 동적 로드 -->
                         </select>
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-300 mb-1">단원 제목</label>
-                        <input type="text" id="t-unit-name" placeholder="예: Lesson 9 Sparkle DIE" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200">
+                        <label class="block font-bold text-slate-700 mb-1">단원 제목</label>
+                        <input type="text" id="t-unit-name" placeholder="예: Lesson 9 Sparkle DIE" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-slate-800 outline-none focus:border-pink-500">
                     </div>
                     <div>
-                        <label class="block font-bold text-slate-300 mb-1">문장 목록 (한 줄에 한 문장씩 입력)</label>
-                        <textarea id="t-unit-sentences" rows="6" placeholder="I do not have any plans.&#10;They play soccer with children.&#10;I like hiking in a forest." class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 font-game leading-relaxed custom-scrollbar"></textarea>
+                        <label class="block font-bold text-slate-700 mb-1">문장 목록 (한 줄에 한 문장씩 입력)</label>
+                        <textarea id="t-unit-sentences" rows="6" placeholder="I do not have any plans.&#10;They play soccer with children.&#10;I like hiking in a forest." class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-slate-800 font-game leading-relaxed custom-scrollbar outline-none focus:border-pink-500"></textarea>
                     </div>
                     <div class="flex gap-2">
-                        <button type="button" onclick="saveCurrentUnit()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition">
+                        <button type="button" onclick="saveCurrentUnit()" class="flex-1 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition cursor-pointer">
                             단원 저장
                         </button>
-                        <button type="button" onclick="deleteCurrentUnit()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg transition">
+                        <button type="button" onclick="deleteCurrentUnit()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg transition cursor-pointer">
                             단원 삭제
                         </button>
                     </div>
@@ -772,7 +788,7 @@
 
                 <!-- 2) 명예의 전당 기록 관리 패널 -->
                 <div id="t-view-hof" class="hidden space-y-3">
-                    <div class="text-[11px] text-slate-400">
+                    <div class="text-[11px] text-slate-500">
                         비속어 또는 비정상적인 기록을 선택하여 삭제할 수 있습니다.
                     </div>
                     <div id="t-hof-list" class="max-h-56 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
@@ -1080,7 +1096,7 @@
         window.openProfileModal = () => {
             const picker = document.getElementById('avatar-picker');
             picker.innerHTML = AVATARS.map(a => `
-                <button type="button" onclick="selectAvatar('${a}')" class="p-2 rounded-xl hover:bg-slate-800 transition ${myProfile.avatar === a ? 'bg-pink-600/40 ring-2 ring-pink-500' : ''}">
+                <button type="button" onclick="selectAvatar('${a}')" class="p-2 rounded-xl hover:bg-pink-50 transition border border-transparent cursor-pointer ${myProfile.avatar === a ? 'bg-pink-100 ring-2 ring-pink-500 border-pink-300' : ''}">
                     ${a}
                 </button>
             `).join('');
@@ -1196,7 +1212,7 @@
         }
 
         // ─────────────────────────────────────────────────────────────────
-        // 화면 전환 네비게이션
+        // 화면 전환 네비게이션 (게임 화면 상단 밀착 로직 포함)
         // ─────────────────────────────────────────────────────────────────
         window.switchHomeTab = (tab) => {
             const soloBtn = document.getElementById('tab-btn-solo');
@@ -1205,13 +1221,13 @@
             const multiTab = document.getElementById('home-tab-multi');
 
             if (tab === 'solo') {
-                soloBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30";
-                multiBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200";
+                soloBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30 cursor-pointer";
+                multiBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200 cursor-pointer";
                 soloTab.classList.remove('hidden');
                 multiTab.classList.add('hidden');
             } else {
-                multiBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30";
-                soloBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200";
+                multiBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md shadow-pink-600/30 cursor-pointer";
+                soloBtn.className = "flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200 cursor-pointer";
                 multiTab.classList.remove('hidden');
                 soloTab.classList.add('hidden');
             }
@@ -1222,7 +1238,26 @@
                 const el = document.getElementById(id);
                 if (el) el.classList.toggle('hidden', id !== screenId);
             });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const mainHeader = document.getElementById('main-header');
+            const mainContainer = document.getElementById('main-container');
+
+            if (mainHeader) {
+                // 게임 진행 화면일 때 보조 헤더를 숨겨 상단 밀착 보장
+                mainHeader.classList.toggle('hidden', screenId === 'screen-game');
+            }
+
+            if (mainContainer) {
+                if (screenId === 'screen-game') {
+                    mainContainer.classList.add('pt-0', 'sm:pt-0.5');
+                    mainContainer.classList.remove('pt-1', 'sm:pt-2');
+                } else {
+                    mainContainer.classList.remove('pt-0', 'sm:pt-0.5');
+                    mainContainer.classList.add('pt-1', 'sm:pt-2');
+                }
+            }
+
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }
 
         window.returnHome = () => {
@@ -1460,7 +1495,7 @@
             const choices = [cleanTarget, ...shuffledDist].sort(() => Math.random() - 0.5);
 
             grid.innerHTML = choices.map(w => `
-                <button type="button" onclick="selectWordChoice('${w}')" class="p-3 bg-slate-800 hover:bg-pink-600 border border-slate-700 hover:border-pink-500 rounded-xl text-xs sm:text-sm font-black font-game text-slate-200 hover:text-white transition shadow-sm active:scale-95 cursor-pointer">
+                <button type="button" onclick="selectWordChoice('${w}')" class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
                     ${w}
                 </button>
             `).join('');
@@ -1688,7 +1723,7 @@
             feed.innerHTML = `<i class="fas fa-bell text-pink-400 mr-1.5"></i> ${msg}`;
         }
 
-        // 참가자 아레나 카드 UI 렌더링
+        // 참가자 아레나 카드 UI 렌더링 (컴팩트 & 고대비 라이트 테마)
         function updateArenaUI(players, turnIdx) {
             const arena = document.getElementById('game-arena');
             const alive = players.filter(p => p.isAlive).length;
@@ -1697,13 +1732,13 @@
             arena.innerHTML = players.map((p, idx) => {
                 const isCurrent = (idx === turnIdx && p.isAlive);
                 return `
-                    <div class="p-2 rounded-xl text-center transition-all ${isCurrent ? 'bg-pink-600/30 border-2 border-pink-500 avatar-ring-turn' : 'bg-slate-900 border border-slate-800'} ${!p.isAlive ? 'opacity-40 grayscale' : ''}">
-                        <div class="text-2xl mb-0.5 relative inline-block">
+                    <div class="p-1.5 sm:p-2 rounded-xl text-center transition-all ${isCurrent ? 'bg-amber-50 border-2 border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-white border-2 border-slate-200 shadow-2xs'} ${!p.isAlive ? 'opacity-50 grayscale bg-slate-100 border-slate-200' : ''}">
+                        <div class="text-xl sm:text-2xl mb-0.5 relative inline-block">
                             ${p.avatar}
-                            ${!p.isAlive ? '<span class="absolute -top-1 -right-1 text-[10px] bg-red-600 text-white font-black px-1 rounded-full">OUT</span>' : ''}
+                            ${!p.isAlive ? '<span class="absolute -top-1 -right-1 text-[9px] bg-rose-600 text-white font-black px-1.5 py-0.2 rounded-full shadow-xs">OUT</span>' : ''}
                         </div>
-                        <div class="text-[11px] font-black truncate text-slate-200 ${isCurrent ? 'text-pink-300' : ''}">${p.name}</div>
-                        <div class="text-[9px] text-slate-400 font-bold">${p.isAlive ? `${p.score}점` : '탈락'}</div>
+                        <div class="text-[11px] font-black truncate ${isCurrent ? 'text-pink-600' : 'text-slate-800'}">${p.name}</div>
+                        <div class="text-[10px] ${p.isAlive ? 'text-amber-600 font-bold' : 'text-slate-400 font-medium'}">${p.isAlive ? `${p.score}점` : '탈락'}</div>
                     </div>
                 `;
             }).join('');
@@ -1750,17 +1785,17 @@
                 document.getElementById('result-header-icon').innerText = '👑';
                 document.getElementById('result-header-title').innerText = '서바이벌 우승!';
                 document.getElementById('result-header-desc').innerText = '최후의 1인으로 끝까지 살아남았습니다!';
-                document.getElementById('result-header-desc').className = 'text-xs font-bold text-amber-400';
+                document.getElementById('result-header-desc').className = 'text-xs font-bold text-amber-600';
                 document.getElementById('result-player-badge').innerText = '🏆 최종 우승';
-                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 border border-amber-300';
             } else {
                 playSfx('down');
                 document.getElementById('result-header-icon').innerText = '🪑';
                 document.getElementById('result-header-title').innerText = '서바이벌 종료';
                 document.getElementById('result-header-desc').innerText = options.reason || '아쉽게 탈락했습니다! 다음 번에 더 높은 점수에 도전해 보세요.';
-                document.getElementById('result-header-desc').className = 'text-xs font-bold text-slate-400';
+                document.getElementById('result-header-desc').className = 'text-xs font-bold text-slate-500';
                 document.getElementById('result-player-badge').innerText = '🪑 자리 앉기 (탈락)';
-                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-700/60 text-slate-300 border border-slate-600';
+                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-200 text-slate-700 border border-slate-300';
             }
 
             document.getElementById('result-player-avatar').innerText = myProfile.avatar || '🐥';
@@ -1915,14 +1950,14 @@
                 // 대기실 참가자 목록 렌더링
                 const pList = document.getElementById('lobby-player-list');
                 pList.innerHTML = players.map(p => `
-                    <div class="p-2.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center gap-2">
+                    <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-2xs">
                         <span class="text-2xl">${p.avatar}</span>
                         <div class="text-left overflow-hidden">
-                            <div class="font-black text-xs text-slate-200 truncate flex items-center gap-1">
+                            <div class="font-black text-xs text-slate-800 truncate flex items-center gap-1">
                                 <span>${p.name}</span>
-                                ${p.isHost ? '<i class="fas fa-crown text-[10px] text-amber-400"></i>' : ''}
+                                ${p.isHost ? '<i class="fas fa-crown text-[10px] text-amber-500"></i>' : ''}
                             </div>
-                            <div class="text-[10px] text-slate-400 font-bold">${p.grade}학년 ${p.classNum}반</div>
+                            <div class="text-[10px] text-slate-500 font-bold">${p.grade}학년 ${p.classNum}반</div>
                         </div>
                     </div>
                 `).join('');
@@ -2027,9 +2062,9 @@
                 const tab = document.getElementById('hof-tab-' + p);
                 if (tab) {
                     if (p === period) {
-                        tab.className = "hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-pink-700 shadow-2xs";
+                        tab.className = "hof-period-tab flex-1 py-1.5 text-xs font-black rounded-lg transition-all bg-white text-pink-700 shadow-2xs border border-pink-200 cursor-pointer";
                     } else {
-                        tab.className = "hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200";
+                        tab.className = "hof-period-tab flex-1 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
                     }
                 }
             });
@@ -2158,7 +2193,7 @@
 
             container.innerHTML = displayList.map((item, index) => {
                 const rank = index + 1;
-                let rankBadge = `<span class="w-6 h-6 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 font-black text-xs">${rank}</span>`;
+                let rankBadge = `<span class="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 font-black text-xs">${rank}</span>`;
                 if (rank === 1) rankBadge = '<span class="text-xl">🥇</span>';
                 else if (rank === 2) rankBadge = '<span class="text-xl">🥈</span>';
                 else if (rank === 3) rankBadge = '<span class="text-xl">🥉</span>';
@@ -2167,25 +2202,25 @@
                 const unitLabel = unitObj ? unitObj.name : '단원 기록';
 
                 return `
-                    <div class="flex items-center justify-between p-2.5 bg-slate-900 border border-slate-800 rounded-xl hover:border-pink-500/50 transition">
+                    <div class="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl hover:border-pink-300 hover:shadow-xs transition">
                         <div class="flex items-center gap-2.5">
                             <div class="flex items-center justify-center w-7 text-center flex-shrink-0">
                                 ${rankBadge}
                             </div>
                             <span class="text-xl">${item.avatar}</span>
                             <div>
-                                <div class="font-black text-slate-200 text-xs flex items-center gap-1.5">
+                                <div class="font-black text-slate-800 text-xs flex items-center gap-1.5">
                                     <span>${item.maskedName}</span>
-                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">${item.result}</span>
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-pink-100 text-pink-700 border border-pink-200">${item.result}</span>
                                 </div>
-                                <div class="text-[10px] text-slate-400 font-medium">
-                                    ${item.grade ? `${item.grade}학년 ${item.classNum}반` : '소속 정보 없음'} · <span class="text-slate-500">${unitLabel}</span>
+                                <div class="text-[10px] text-slate-500 font-medium">
+                                    ${item.grade ? `${item.grade}학년 ${item.classNum}반` : '소속 정보 없음'} · <span class="text-slate-400">${unitLabel}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <span class="text-sm font-black font-game text-amber-400">${item.score}</span>
-                            <span class="text-[10px] text-slate-400 font-bold ml-0.5">점</span>
+                            <span class="text-sm font-black font-game text-amber-600">${item.score}</span>
+                            <span class="text-[10px] text-slate-500 font-bold ml-0.5">점</span>
                         </div>
                     </div>
                 `;
@@ -2202,13 +2237,13 @@
             const viewHof = document.getElementById('t-view-hof');
 
             if (tab === 'units') {
-                btnUnits.className = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white";
-                btnHof.className = "flex-1 py-1.5 rounded text-xs font-bold text-slate-400 hover:text-slate-200";
+                btnUnits.className = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer";
+                btnHof.className = "flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer";
                 viewUnits.classList.remove('hidden');
                 viewHof.classList.add('hidden');
             } else {
-                btnHof.className = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white";
-                btnUnits.className = "flex-1 py-1.5 rounded text-xs font-bold text-slate-400 hover:text-slate-200";
+                btnHof.className = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer";
+                btnUnits.className = "flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer";
                 viewHof.classList.remove('hidden');
                 viewUnits.classList.add('hidden');
                 renderTeacherHofList();
@@ -2292,16 +2327,16 @@
         function renderTeacherHofList() {
             const listEl = document.getElementById('t-hof-list');
             if (hofAllScores.length === 0) {
-                listEl.innerHTML = `<div class="text-center py-6 text-slate-500">기록이 없습니다.</div>`;
+                listEl.innerHTML = `<div class="text-center py-6 text-slate-500 font-bold">기록이 없습니다.</div>`;
                 return;
             }
             listEl.innerHTML = hofAllScores.map(item => `
-                <div class="flex items-center justify-between p-2 bg-slate-900 border border-slate-800 rounded-lg">
+                <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                     <div>
-                        <span class="font-bold text-slate-200">${item.name}</span>
-                        <span class="text-slate-400 text-[10px]">(${item.grade}학년 ${item.classNum}반 ${item.studentNum}번) - ${item.score}점</span>
+                        <span class="font-bold text-slate-800">${item.name}</span>
+                        <span class="text-slate-500 text-[10px]">(${item.grade}학년 ${item.classNum}반 ${item.studentNum}번) - ${item.score}점</span>
                     </div>
-                    <button type="button" onclick="deleteHofScore('${item.id}')" class="px-2 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[10px] font-bold">
+                    <button type="button" onclick="deleteHofScore('${item.id}')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[10px] font-bold cursor-pointer transition">
                         삭제
                     </button>
                 </div>
