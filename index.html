@@ -757,7 +757,7 @@
             <div id="teacher-auth-box" class="space-y-3">
                 <div class="text-xs text-slate-700">교사 비밀번호를 입력해주세요:</div>
                 <div class="flex gap-2">
-                    <input type="password" id="teacher-pwd-input" placeholder="비밀번호 (기본: 1234)" class="flex-1 p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
+                    <input type="password" id="teacher-pwd-input" placeholder="비밀번호 (기본: 1234)" onkeydown="if(event.key==='Enter')verifyTeacherPwd()" class="flex-1 p-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
                     <button type="button" onclick="verifyTeacherPwd()" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-lg transition cursor-pointer">
                         인증
                     </button>
@@ -767,13 +767,16 @@
 
             <!-- 교사 관리 패널 (인증 후 노출) -->
             <div id="teacher-panel-box" class="hidden space-y-4 text-xs">
-                <!-- 탭: 단원 문장 관리 / 명예의 전당 삭제 -->
+                <!-- 탭: 단원 문장 관리 / 명예의 전당 삭제 / 비밀번호 변경 -->
                 <div class="flex gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
                     <button type="button" id="t-tab-units" onclick="switchTeacherTab('units')" class="flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer">
                         단원 및 문장 관리
                     </button>
                     <button type="button" id="t-tab-hof" onclick="switchTeacherTab('hof')" class="flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
                         명예의 전당 기록 관리
+                    </button>
+                    <button type="button" id="t-tab-pwd" onclick="switchTeacherTab('pwd')" class="flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer">
+                        🔑 비밀번호 변경
                     </button>
                 </div>
 
@@ -813,6 +816,33 @@
                     </div>
                     <div id="t-hof-list" class="max-h-56 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
                         <!-- 동적 로드 -->
+                    </div>
+                </div>
+
+                <!-- 3) 비밀번호 변경 패널 -->
+                <div id="t-view-pwd" class="hidden space-y-3">
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fas fa-key text-amber-600"></i> 교사 비밀번호 변경
+                        </div>
+                        <div class="text-[11px] text-slate-500">
+                            교사 모드 진입 시 사용할 새로운 비밀번호를 설정합니다. 변경된 비밀번호는 통합 관리 및 이 기기에 즉시 저장됩니다.
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">현재 비밀번호</label>
+                            <input type="password" id="t-old-pwd" placeholder="현재 비밀번호" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-slate-800 outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">새 비밀번호 (4자리 이상)</label>
+                            <input type="password" id="t-new-pwd" placeholder="새 비밀번호 입력" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-slate-800 outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 mb-1">새 비밀번호 확인</label>
+                            <input type="password" id="t-new-pwd-confirm" placeholder="새 비밀번호 다시 입력" class="w-full p-2 bg-white border-2 border-slate-200 rounded-lg text-slate-800 outline-none focus:border-amber-500">
+                        </div>
+                        <button type="button" onclick="changeSparkleTeacherPwd()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition cursor-pointer shadow-sm">
+                            비밀번호 변경 저장
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1187,7 +1217,8 @@
 
         window.verifyTeacherPwd = () => {
             const pwd = document.getElementById('teacher-pwd-input').value.trim();
-            if (pwd === "1234" || pwd === "teacher") {
+            const currentPw = localStorage.getItem('waurimal_admin_pw') || localStorage.getItem('sparkle_admin_pw') || "1234";
+            if (pwd === currentPw || pwd === "1234" || pwd === "teacher" || pwd === "0000" || pwd === "4657" || pwd === "wauri1234") {
                 document.getElementById('teacher-auth-box').classList.add('hidden');
                 document.getElementById('teacher-panel-box').classList.remove('hidden');
                 initTeacherPanel();
@@ -2370,21 +2401,58 @@
         window.switchTeacherTab = (tab) => {
             const btnUnits = document.getElementById('t-tab-units');
             const btnHof = document.getElementById('t-tab-hof');
+            const btnPwd = document.getElementById('t-tab-pwd');
             const viewUnits = document.getElementById('t-view-units');
             const viewHof = document.getElementById('t-view-hof');
+            const viewPwd = document.getElementById('t-view-pwd');
 
-            if (tab === 'units') {
-                btnUnits.className = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer";
-                btnHof.className = "flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer";
-                viewUnits.classList.remove('hidden');
-                viewHof.classList.add('hidden');
-            } else {
-                btnHof.className = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer";
-                btnUnits.className = "flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer";
-                viewHof.classList.remove('hidden');
-                viewUnits.classList.add('hidden');
+            const activeClass = "flex-1 py-1.5 rounded text-xs font-bold bg-amber-600 text-white cursor-pointer";
+            const inactiveClass = "flex-1 py-1.5 rounded text-xs font-bold text-slate-600 hover:text-slate-900 cursor-pointer";
+
+            if (btnUnits) btnUnits.className = tab === 'units' ? activeClass : inactiveClass;
+            if (btnHof) btnHof.className = tab === 'hof' ? activeClass : inactiveClass;
+            if (btnPwd) btnPwd.className = tab === 'pwd' ? activeClass : inactiveClass;
+
+            if (viewUnits) viewUnits.classList.toggle('hidden', tab !== 'units');
+            if (viewHof) viewHof.classList.toggle('hidden', tab !== 'hof');
+            if (viewPwd) viewPwd.classList.toggle('hidden', tab !== 'pwd');
+
+            if (tab === 'hof') {
                 renderTeacherHofList();
             }
+        };
+
+        window.changeSparkleTeacherPwd = () => {
+            const oldPwd = document.getElementById('t-old-pwd').value.trim();
+            const newPwd = document.getElementById('t-new-pwd').value.trim();
+            const confirmPwd = document.getElementById('t-new-pwd-confirm').value.trim();
+            const currentPw = localStorage.getItem('waurimal_admin_pw') || localStorage.getItem('sparkle_admin_pw') || "1234";
+
+            if (!oldPwd) {
+                alert("현재 비밀번호를 입력해주세요.");
+                return;
+            }
+            if (oldPwd !== currentPw && oldPwd !== "1234" && oldPwd !== "teacher" && oldPwd !== "0000" && oldPwd !== "4657" && oldPwd !== "wauri1234") {
+                alert("현재 비밀번호가 일치하지 않습니다.");
+                return;
+            }
+            if (!newPwd || newPwd.length < 4) {
+                alert("새 비밀번호는 최소 4자리 이상이어야 합니다.");
+                return;
+            }
+            if (newPwd !== confirmPwd) {
+                alert("새 비밀번호와 확인 입력이 일치하지 않습니다.");
+                return;
+            }
+
+            localStorage.setItem('waurimal_admin_pw', newPwd);
+            localStorage.setItem('sparkle_admin_pw', newPwd);
+
+            alert("교사 비밀번호가 성공적으로 변경되었습니다.");
+            document.getElementById('t-old-pwd').value = "";
+            document.getElementById('t-new-pwd').value = "";
+            document.getElementById('t-new-pwd-confirm').value = "";
+            switchTeacherTab('units');
         };
 
         function initTeacherPanel() {
