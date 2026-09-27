@@ -534,6 +534,24 @@
                         <i class="fas fa-spinner fa-spin text-pink-500"></i>
                         <span><span id="turn-current-player-name" class="text-pink-600 font-black">---</span> 님의 차례입니다...</span>
                     </div>
+
+                    <!-- 탈락 시 관전 모드 안내 배너 -->
+                    <div id="game-spectator-box" class="hidden p-3 bg-amber-50 border-2 border-amber-300 rounded-xl space-y-2 text-center shadow-xs">
+                        <div class="text-xs font-black text-amber-900 flex items-center justify-center gap-1.5">
+                            <span class="text-base">🪑</span>
+                            <span>자리에 앉아 다른 참가자들의 문장 릴레이를 관전 중입니다.</span>
+                        </div>
+                        <div class="flex items-center justify-center gap-2">
+                            <button type="button" onclick="showMySoloResultNow()" class="px-3.5 py-1.5 bg-pink-600 hover:bg-pink-500 text-white font-black text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>내 성적 확인하기</span>
+                            </button>
+                            <button type="button" onclick="restartSoloGameNow()" class="px-3.5 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-black text-xs rounded-lg transition shadow-xs flex items-center gap-1 cursor-pointer">
+                                <i class="fas fa-redo"></i>
+                                <span>다시 시작하기</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 하단 라이브 실황 알림 바 -->
@@ -1315,7 +1333,7 @@
                 sentences: [...selectedUnit.sentences].sort(() => Math.random() - 0.5),
                 sentenceIndex: 0,
                 players: players,
-                currentTurnIndex: 0,
+                currentTurnIndex: players.length - 1,
                 phase: "memorize",
                 currentSentence: "",
                 words: [],
@@ -1325,6 +1343,7 @@
                 maxTimer: maxT
             };
 
+            document.getElementById('game-spectator-box')?.classList.add('hidden');
             currentGameMode = "solo";
             showScreen('screen-game');
             startSoloRound();
@@ -1348,6 +1367,14 @@
             document.getElementById('game-round-badge').innerText = `Round ${soloGame.sentenceIndex + 1}`;
             document.getElementById('game-unit-title').innerText = soloGame.unit.name;
             document.getElementById('game-skip-badge').classList.toggle('hidden', !soloGame.hasSkipChance);
+
+            // 관전 모드 상태 점검
+            const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
+            if (myPlayer && !myPlayer.isAlive) {
+                document.getElementById('game-spectator-box')?.classList.remove('hidden');
+            } else {
+                document.getElementById('game-spectator-box')?.classList.add('hidden');
+            }
 
             updateArenaUI(soloGame.players, soloGame.currentTurnIndex);
 
@@ -1632,10 +1659,11 @@
             }
         }
 
-        // 탈락 처리
+        // 탈락 처리 (틀려도 문장이 끝나지 않고 다음 사람이 이어서 그 다음 단어 진행)
         function eliminateCurrentPlayer(reason) {
             if (timerInterval) clearInterval(timerInterval);
-            playSfx('down');
+            playSfx('wrong');
+            setTimeout(() => playSfx('down'), 150);
 
             const curPlayer = soloGame.players[soloGame.currentTurnIndex];
             curPlayer.isAlive = false;
@@ -1643,26 +1671,16 @@
             setFeedMessage(`💥 ${reason}`);
             updateArenaUI(soloGame.players, soloGame.currentTurnIndex);
 
-            // 내가 탈락한 경우
-            if (curPlayer.id === 'me' || curPlayer.name === myProfile.name) {
-                if (currentGameMode === 'solo') {
-                    // 개인전은 내가 탈락하면 대기 없이 바로 최종 성적 저장 및 결과 화면 표시
-                    setTimeout(() => {
-                        const correctWords = Math.floor((curPlayer.score || 0) / 10);
-                        finishGameResult({
-                            isWinner: false,
-                            score: curPlayer.score || 0,
-                            resultLabel: '탈락',
-                            correctWords: correctWords,
-                            bonus: 0,
-                            reason: reason
-                        });
-                    }, 1200);
-                    return;
-                } else {
-                    // 멀티플레이는 실시간 점수 백그라운드 저장 후 관전 모드 진행
-                    saveScoreToHallOfFame(curPlayer.score || 0, '탈락', soloGame.unit ? soloGame.unit.id : 'unit_lesson_9_canva');
-                }
+            // 내가 탈락한 경우 처리
+            const isMe = (curPlayer.id === 'me' || curPlayer.name === myProfile.name);
+            if (isMe) {
+                // 성적 백그라운드 자동 저장 (명예의 전당)
+                saveScoreToHallOfFame(curPlayer.score || 0, '탈락', soloGame.unit ? soloGame.unit.id : 'unit_lesson_9_canva');
+                // 관전 안내 배너 활성화 및 턴 조작 패널 정리
+                document.getElementById('game-spectator-box')?.classList.remove('hidden');
+                document.getElementById('turn-word-options')?.classList.add('hidden');
+                document.getElementById('turn-trigger-box')?.classList.add('hidden');
+                document.getElementById('turn-waiting-box')?.classList.remove('hidden');
             }
 
             const alivePlayers = soloGame.players.filter(p => p.isAlive);
@@ -1670,17 +1688,94 @@
                 // 최후의 1인 우승!
                 setTimeout(() => {
                     finishGameVictory(alivePlayers[0] || soloGame.players[0]);
-                }, 1000);
+                }, 1200);
                 return;
             }
 
-            // 다음 문장 라운드로 리셋하여 계속 진행
-            setTimeout(() => {
-                soloGame.sentenceIndex++;
-                advanceToNextAliveTurn();
-                startSoloRound();
-            }, 1500);
+            // 페이즈별 분기 처리
+            if (soloGame.phase === "relay") {
+                // ── [단어 릴레이 단계]: 참가자가 틀려도 문장이 끝나지 않고, 다음 사람이 이어서 그 다음 단어 말하기! ──
+                const missedWord = soloGame.words[soloGame.wordIndex];
+                const slot = document.getElementById(`word-slot-${soloGame.wordIndex}`);
+                if (slot) {
+                    slot.innerText = missedWord;
+                    slot.className = "px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-rose-500 bg-rose-500/20 text-rose-300 min-w-[70px] text-center shadow-md shadow-rose-500/20";
+                }
+
+                setFeedMessage(`💥 [${curPlayer.name}]님 탈락! (정답: "${missedWord}") 다음 참가자가 이어서 진행합니다.`);
+                soloGame.wordIndex++;
+
+                setTimeout(() => {
+                    const remainingAlive = soloGame.players.filter(p => p.isAlive);
+                    if (remainingAlive.length <= 1) {
+                        finishGameVictory(remainingAlive[0] || soloGame.players[0]);
+                        return;
+                    }
+
+                    if (soloGame.wordIndex >= soloGame.words.length) {
+                        // 모든 단어가 완성되었으면 피날레 폭탄 단계로 진입
+                        soloGame.phase = "sparkle";
+                        document.getElementById('game-phase-label').innerText = "💥 문장 완성! 폭탄 트리거 발동!";
+                        setFeedMessage("💥 문장 완성! 폭탄 트리거 발동! (SPARKLE ➔ DIE ➔ DOWN)");
+                        advanceToNextAliveTurn();
+                        processCurrentTurn();
+                    } else {
+                        // 다음 사람이 이어서 그 다음 단어 말하기 진행
+                        advanceToNextAliveTurn();
+                        processCurrentTurn();
+                    }
+                }, 1200);
+
+            } else if (soloGame.phase === "sparkle") {
+                // SPARKLE 단계에서 시간 초과로 탈락 ➔ 다음 생존자가 SPARKLE 시도
+                setTimeout(() => {
+                    advanceToNextAliveTurn();
+                    processCurrentTurn();
+                }, 1000);
+
+            } else if (soloGame.phase === "die") {
+                // DIE 단계에서 시간 초과로 탈락 ➔ 다음 생존자가 DIE 시도
+                setTimeout(() => {
+                    advanceToNextAliveTurn();
+                    processCurrentTurn();
+                }, 1000);
+
+            } else if (soloGame.phase === "down") {
+                // DOWN 피날레에 걸려 정상 탈락 ➔ 문장 라운드가 완전히 끝났으므로 다음 문장으로 진행
+                setTimeout(() => {
+                    soloGame.sentenceIndex++;
+                    startSoloRound();
+                }, 1500);
+
+            } else {
+                // 기타 단계
+                setTimeout(() => {
+                    advanceToNextAliveTurn();
+                    processCurrentTurn();
+                }, 1200);
+            }
         }
+
+        // 관전 모드 조작 액션
+        window.showMySoloResultNow = () => {
+            if (timerInterval) clearInterval(timerInterval);
+            const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
+            const score = myPlayer ? myPlayer.score : 0;
+            const correctWords = Math.floor(score / 10);
+            finishGameResult({
+                isWinner: false,
+                score: score,
+                resultLabel: '탈락',
+                correctWords: correctWords,
+                bonus: 0,
+                reason: '자리에 앉았습니다 (탈락)'
+            });
+        };
+
+        window.restartSoloGameNow = () => {
+            if (timerInterval) clearInterval(timerInterval);
+            startSoloGame();
+        };
 
         // 다음 생존 플레이어에게 턴 넘기기
         function advanceToNextAliveTurn() {
@@ -1766,6 +1861,7 @@
 
         async function finishGameResult(options) {
             if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('game-spectator-box')?.classList.add('hidden');
             showScreen('screen-result');
 
             const isWinner = options.isWinner;
