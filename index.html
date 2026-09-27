@@ -18,6 +18,8 @@
     <!-- 와우리말 공통 통합 테마 및 내비게이션 -->
     <link rel="stylesheet" href="../common/waurimal-theme.css">
     <script src="../common/waurimal-nav.js"></script>
+    <script src="../common/firebase-config.js"></script>
+    <script src="../common/curriculum.js"></script>
 
     <style>
         :root {
@@ -1197,7 +1199,41 @@
         // ─────────────────────────────────────────────────────────────────
         // 단원 목록 로딩 및 UI 드롭다운 연동
         // ─────────────────────────────────────────────────────────────────
+        function syncWithWaurimalCurriculum() {
+            if (window.WaurimalCurriculum && typeof window.WaurimalCurriculum.getLessons === 'function') {
+                const lessons = window.WaurimalCurriculum.getLessons();
+                if (Array.isArray(lessons) && lessons.length > 0) {
+                    const mapped = lessons.map(l => {
+                        let sents = [];
+                        if (Array.isArray(l.sentences) && l.sentences.length > 0) {
+                            sents = l.sentences.map(s => typeof s === 'string' ? s : (s.en || s.sentence || ''));
+                        } else if (Array.isArray(l.words) && l.words.length > 0) {
+                            sents = l.words.map(w => typeof w === 'string' ? `I like ${w}.` : `I like ${w.en || ''}.`);
+                        }
+                        return {
+                            id: l.code,
+                            code: l.code,
+                            grade: l.grade,
+                            name: l.name,
+                            sentences: sents.filter(s => s && s.trim().length > 0)
+                        };
+                    }).filter(u => u.sentences.length > 0);
+
+                    if (mapped.length > 0) {
+                        unitsData = mapped;
+                        populateUnitDropdowns();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         async function loadUnitsFromCloud() {
+            // 1. 와우리말 공통 통합 교육과정 (WaurimalCurriculum) 우선 연동
+            syncWithWaurimalCurriculum();
+
+            // 2. Sparkle 전용 클라우드 아티팩트 오버라이드 확인
             try {
                 const docRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'settings', 'units');
                 const snap = await getDoc(docRef);
@@ -1209,6 +1245,11 @@
             }
             populateUnitDropdowns();
         }
+
+        // 실시간 통합 교육과정 업데이트 이벤트 리스너 등록
+        window.addEventListener('waurimal_curriculum_updated', () => {
+            syncWithWaurimalCurriculum();
+        });
 
         function populateUnitDropdowns() {
             const soloSelect = document.getElementById('solo-unit-select');
@@ -2294,7 +2335,7 @@
                 else if (rank === 2) rankBadge = '<span class="text-xl">🥈</span>';
                 else if (rank === 3) rankBadge = '<span class="text-xl">🥉</span>';
 
-                const unitObj = unitsData.find(x => x.id === item.unitId);
+                const unitObj = unitsData.find(x => x.id === item.unitId || x.code === item.unitId);
                 const unitLabel = unitObj ? unitObj.name : '단원 기록';
 
                 return `
