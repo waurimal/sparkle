@@ -15,6 +15,10 @@
     <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+    <!-- 와우리말 공통 통합 테마 및 내비게이션 -->
+    <link rel="stylesheet" href="../common/waurimal-theme.css">
+    <script src="../common/waurimal-nav.js"></script>
+
     <style>
         :root {
             --font-main: 'Noto Sans KR', sans-serif;
@@ -633,7 +637,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">학년</label>
-                        <select id="input-prof-grade" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <select id="input-prof-grade" name="grade" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
                             <option value="3">3학년</option>
                             <option value="4">4학년</option>
                             <option value="5">5학년</option>
@@ -642,7 +646,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">반</label>
-                        <select id="input-prof-class" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <select id="input-prof-class" name="class" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
                             <option value="1" selected>1반</option><option value="2">2반</option>
                             <option value="3">3반</option><option value="4">4반</option>
                             <option value="5">5반</option><option value="6">6반</option>
@@ -655,11 +659,11 @@
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">번호</label>
-                        <input type="number" id="input-prof-num" min="1" max="50" value="1" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <input type="number" id="input-prof-num" name="studentNum" min="1" max="50" value="1" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">이름</label>
-                        <input type="text" id="input-prof-name" placeholder="이름 입력" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
+                        <input type="text" id="input-prof-name" name="studentName" placeholder="이름 입력" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-slate-200">
                     </div>
                 </div>
             </div>
@@ -1055,6 +1059,15 @@
         // ─────────────────────────────────────────────────────────────────
         function loadStoredProfile() {
             try {
+                if (window.WaurimalStudent) {
+                    const sso = window.WaurimalStudent.get();
+                    if (sso && sso.name) {
+                        myProfile.name = sso.name;
+                        myProfile.grade = sso.grade || myProfile.grade;
+                        myProfile.classNum = sso.classNum || myProfile.classNum;
+                        myProfile.studentNum = sso.studentNum || myProfile.studentNum;
+                    }
+                }
                 const stored = localStorage.getItem('sparkle_user_profile');
                 if (stored) {
                     myProfile = { ...myProfile, ...JSON.parse(stored) };
@@ -1062,6 +1075,16 @@
             } catch(e) {}
             updateProfileUI();
         }
+
+        window.addEventListener('waurimal_student_updated', (e) => {
+            if (e.detail && e.detail.name) {
+                myProfile.name = e.detail.name;
+                myProfile.grade = e.detail.grade || myProfile.grade;
+                myProfile.classNum = e.detail.classNum || myProfile.classNum;
+                myProfile.studentNum = e.detail.studentNum || myProfile.studentNum;
+                updateProfileUI();
+            }
+        });
 
         function updateProfileUI() {
             document.getElementById('nav-user-avatar').innerText = myProfile.avatar;
@@ -1102,12 +1125,26 @@
             const classNum = document.getElementById('input-prof-class').value;
             const studentNum = document.getElementById('input-prof-num').value || "1";
 
+            if (window.WaurimalProfanity && window.WaurimalProfanity.check(name)) {
+                alert("비속어가 포함된 이름이나 닉네임은 사용할 수 없습니다.");
+                return;
+            }
+
             myProfile.name = name;
             myProfile.grade = grade;
             myProfile.classNum = classNum;
             myProfile.studentNum = studentNum;
 
             localStorage.setItem('sparkle_user_profile', JSON.stringify(myProfile));
+            if (window.WaurimalStudent) {
+                window.WaurimalStudent.save({
+                    school: "이의초등학교",
+                    grade: grade,
+                    classNum: classNum,
+                    studentNum: studentNum,
+                    name: name
+                });
+            }
             updateProfileUI();
             closeProfileModal();
             playSfx('sparkle');
