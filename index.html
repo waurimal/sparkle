@@ -1206,6 +1206,13 @@
         window.closeRulesModal = () => document.getElementById('modal-rules').classList.add('hidden');
 
         window.openTeacherModal = () => {
+            if (window.WaurimalAuth && window.WaurimalAuth.isAuthenticated()) {
+                document.getElementById('teacher-auth-box').classList.add('hidden');
+                document.getElementById('teacher-panel-box').classList.remove('hidden');
+                document.getElementById('modal-teacher').classList.remove('hidden');
+                initTeacherPanel();
+                return;
+            }
             document.getElementById('teacher-pwd-input').value = "";
             document.getElementById('teacher-auth-msg').innerText = "";
             document.getElementById('teacher-auth-box').classList.remove('hidden');
@@ -1217,8 +1224,8 @@
 
         window.verifyTeacherPwd = () => {
             const pwd = document.getElementById('teacher-pwd-input').value.trim();
-            const currentPw = localStorage.getItem('waurimal_admin_pw') || localStorage.getItem('sparkle_admin_pw') || "1234";
-            if (pwd === currentPw || pwd === "1234" || pwd === "teacher" || pwd === "0000" || pwd === "4657" || pwd === "wauri1234") {
+            const authOk = window.WaurimalAuth ? window.WaurimalAuth.authenticate(pwd) : (pwd === (localStorage.getItem('waurimal_admin_pw') || "1234"));
+            if (authOk) {
                 document.getElementById('teacher-auth-box').classList.add('hidden');
                 document.getElementById('teacher-panel-box').classList.remove('hidden');
                 initTeacherPanel();
@@ -1898,13 +1905,14 @@
 
             arena.innerHTML = players.map((p, idx) => {
                 const isCurrent = (idx === turnIdx && p.isAlive);
+                const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(p.name || '') : (p.name || '');
                 return `
                     <div class="p-1.5 sm:p-2 rounded-xl text-center transition-all ${isCurrent ? 'bg-amber-50 border-2 border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-white border-2 border-slate-200 shadow-2xs'} ${!p.isAlive ? 'opacity-50 grayscale bg-slate-100 border-slate-200' : ''}">
                         <div class="text-xl sm:text-2xl mb-0.5 relative inline-block">
                             ${p.avatar}
                             ${!p.isAlive ? '<span class="absolute -top-1 -right-1 text-[9px] bg-rose-600 text-white font-black px-1.5 py-0.2 rounded-full shadow-xs">OUT</span>' : ''}
                         </div>
-                        <div class="text-[11px] font-black truncate ${isCurrent ? 'text-pink-600' : 'text-slate-800'}">${p.name}</div>
+                        <div class="text-[11px] font-black truncate ${isCurrent ? 'text-pink-600' : 'text-slate-800'}">${safeName}</div>
                         <div class="text-[10px] ${p.isAlive ? 'text-amber-600 font-bold' : 'text-slate-400 font-medium'}">${p.isAlive ? `${p.score}점` : '탈락'}</div>
                     </div>
                 `;
@@ -2117,18 +2125,23 @@
 
                 // 대기실 참가자 목록 렌더링
                 const pList = document.getElementById('lobby-player-list');
-                pList.innerHTML = players.map(p => `
+                pList.innerHTML = players.map(p => {
+                    const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(p.name || '') : (p.name || '');
+                    const safeGrade = window.WaurimalSanitize ? window.WaurimalSanitize(String(p.grade || '')) : (p.grade || '');
+                    const safeClass = window.WaurimalSanitize ? window.WaurimalSanitize(String(p.classNum || '')) : (p.classNum || '');
+                    return `
                     <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-2xs">
                         <span class="text-2xl">${p.avatar}</span>
                         <div class="text-left overflow-hidden">
                             <div class="font-black text-xs text-slate-800 truncate flex items-center gap-1">
-                                <span>${p.name}</span>
+                                <span>${safeName}</span>
                                 ${p.isHost ? '<i class="fas fa-crown text-[10px] text-amber-500"></i>' : ''}
                             </div>
-                            <div class="text-[10px] text-slate-500 font-bold">${p.grade}학년 ${p.classNum}반</div>
+                            <div class="text-[10px] text-slate-500 font-bold">${safeGrade}학년 ${safeClass}반</div>
                         </div>
                     </div>
-                `).join('');
+                `;
+                }).join('');
 
                 // 호스트 vs 게스트 UI 분기
                 document.getElementById('lobby-host-controls').classList.toggle('hidden', !isHost);
@@ -2367,7 +2380,12 @@
                 else if (rank === 3) rankBadge = '<span class="text-xl">🥉</span>';
 
                 const unitObj = unitsData.find(x => x.id === item.unitId || x.code === item.unitId);
-                const unitLabel = unitObj ? unitObj.name : '단원 기록';
+                const rawUnitLabel = unitObj ? unitObj.name : '단원 기록';
+                const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(item.maskedName || '') : (item.maskedName || '');
+                const safeResult = window.WaurimalSanitize ? window.WaurimalSanitize(item.result || '') : (item.result || '');
+                const safeUnitLabel = window.WaurimalSanitize ? window.WaurimalSanitize(rawUnitLabel) : rawUnitLabel;
+                const safeGrade = window.WaurimalSanitize ? window.WaurimalSanitize(String(item.grade || '')) : (item.grade || '');
+                const safeClass = window.WaurimalSanitize ? window.WaurimalSanitize(String(item.classNum || '')) : (item.classNum || '');
 
                 return `
                     <div class="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl hover:border-pink-300 hover:shadow-xs transition">
@@ -2378,11 +2396,11 @@
                             <span class="text-xl">${item.avatar}</span>
                             <div>
                                 <div class="font-black text-slate-800 text-xs flex items-center gap-1.5">
-                                    <span>${item.maskedName}</span>
-                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-pink-100 text-pink-700 border border-pink-200">${item.result}</span>
+                                    <span>${safeName}</span>
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-bold bg-pink-100 text-pink-700 border border-pink-200">${safeResult}</span>
                                 </div>
                                 <div class="text-[10px] text-slate-500 font-medium">
-                                    ${item.grade ? `${item.grade}학년 ${item.classNum}반` : '소속 정보 없음'} · <span class="text-slate-400">${unitLabel}</span>
+                                    ${item.grade ? `${safeGrade}학년 ${safeClass}반` : '소속 정보 없음'} · <span class="text-slate-400">${safeUnitLabel}</span>
                                 </div>
                             </div>
                         </div>
@@ -2426,13 +2444,13 @@
             const oldPwd = document.getElementById('t-old-pwd').value.trim();
             const newPwd = document.getElementById('t-new-pwd').value.trim();
             const confirmPwd = document.getElementById('t-new-pwd-confirm').value.trim();
-            const currentPw = localStorage.getItem('waurimal_admin_pw') || localStorage.getItem('sparkle_admin_pw') || "1234";
 
             if (!oldPwd) {
                 alert("현재 비밀번호를 입력해주세요.");
                 return;
             }
-            if (oldPwd !== currentPw && oldPwd !== "1234" && oldPwd !== "teacher" && oldPwd !== "0000" && oldPwd !== "4657" && oldPwd !== "wauri1234") {
+            const oldValid = window.WaurimalAuth ? window.WaurimalAuth.verify(oldPwd) : (oldPwd === (localStorage.getItem('waurimal_admin_pw') || "1234"));
+            if (!oldValid) {
                 alert("현재 비밀번호가 일치하지 않습니다.");
                 return;
             }
@@ -2445,7 +2463,11 @@
                 return;
             }
 
-            localStorage.setItem('waurimal_admin_pw', newPwd);
+            if (window.WaurimalAuth) {
+                window.WaurimalAuth.setPw(newPwd);
+            } else {
+                localStorage.setItem('waurimal_admin_pw', newPwd);
+            }
             localStorage.setItem('sparkle_admin_pw', newPwd);
 
             alert("교사 비밀번호가 성공적으로 변경되었습니다.");
@@ -2535,17 +2557,23 @@
                 listEl.innerHTML = `<div class="text-center py-6 text-slate-500 font-bold">기록이 없습니다.</div>`;
                 return;
             }
-            listEl.innerHTML = hofAllScores.map(item => `
+            listEl.innerHTML = hofAllScores.map(item => {
+                const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(item.name || '') : (item.name || '');
+                const safeGrade = window.WaurimalSanitize ? window.WaurimalSanitize(String(item.grade || '')) : (item.grade || '');
+                const safeClass = window.WaurimalSanitize ? window.WaurimalSanitize(String(item.classNum || '')) : (item.classNum || '');
+                const safeNum = window.WaurimalSanitize ? window.WaurimalSanitize(String(item.studentNum || '')) : (item.studentNum || '');
+                return `
                 <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                     <div>
-                        <span class="font-bold text-slate-800">${item.name}</span>
-                        <span class="text-slate-500 text-[10px]">(${item.grade}학년 ${item.classNum}반 ${item.studentNum}번) - ${item.score}점</span>
+                        <span class="font-bold text-slate-800">${safeName}</span>
+                        <span class="text-slate-500 text-[10px]">(${safeGrade}학년 ${safeClass}반 ${safeNum}번) - ${item.score}점</span>
                     </div>
                     <button type="button" onclick="deleteHofScore('${item.id}')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded text-[10px] font-bold cursor-pointer transition">
                         삭제
                     </button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         window.deleteHofScore = async (docId) => {
