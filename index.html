@@ -2381,7 +2381,7 @@
 
                 const unitObj = unitsData.find(x => x.id === item.unitId || x.code === item.unitId);
                 const rawUnitLabel = unitObj ? unitObj.name : '단원 기록';
-                const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(item.maskedName || '') : (item.maskedName || '');
+                const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(item.maskedName || maskStudentName(item.name || '학생')) : (item.maskedName || maskStudentName(item.name || '학생'));
                 const safeResult = window.WaurimalSanitize ? window.WaurimalSanitize(item.result || '') : (item.result || '');
                 const safeUnitLabel = window.WaurimalSanitize ? window.WaurimalSanitize(rawUnitLabel) : rawUnitLabel;
                 const safeGrade = window.WaurimalSanitize ? window.WaurimalSanitize(String(item.grade || '')) : (item.grade || '');
