@@ -270,6 +270,12 @@
                                     </select>
                                 </div>
                             </div>
+                            <div class="flex items-center gap-2 p-2.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-700">
+                                <input type="checkbox" id="multi-host-participate" checked class="w-4 h-4 accent-pink-600 rounded cursor-pointer">
+                                <label for="multi-host-participate" class="cursor-pointer font-bold select-none">
+                                    방장(교사)도 게임 참가하기 <span class="text-[10px] text-slate-400 font-normal">(체크 해제 시 교사용 전체화면 중계만 진행)</span>
+                                </label>
+                            </div>
                             <button type="button" onclick="createMultiRoom()" class="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-black rounded-lg transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
                                 <i class="fas fa-plus-circle"></i>
                                 <span>방 생성 및 참여 코드 받기</span>
@@ -856,7 +862,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
             getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, 
-            deleteDoc, onSnapshot, query, where, orderBy, limit, increment 
+            deleteDoc, onSnapshot, query, where, orderBy, limit, increment, deleteField 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ─────────────────────────────────────────────────────────────────
@@ -965,6 +971,9 @@
         let currentRoomId = null;
         let unsubscribeRoom = null;
         let timerInterval = null;
+        let currentMultiRoomData = null; // 멀티플레이 실시간 Firestore 룸 데이터
+        let lastHandledActionTime = 0;   // 멀티플레이 효과음 중복 방지 타임스탬프
+        let hostWatchdogTimer = null;    // 호스트 턴 감시 타이머 (비정상 지연 방지)
 
         // 솔로 게임 런타임
         let soloGame = {
@@ -1359,13 +1368,21 @@
 
         window.returnHome = () => {
             if (timerInterval) clearInterval(timerInterval);
+            if (hostWatchdogTimer) { clearTimeout(hostWatchdogTimer); hostWatchdogTimer = null; }
             if (unsubscribeRoom) { unsubscribeRoom(); unsubscribeRoom = null; }
+            currentRoomId = null;
+            currentMultiRoomData = null;
+            currentGameMode = "solo";
             showScreen('screen-home');
         };
 
         window.confirmExitGame = () => {
             if (confirm("게임을 중단하고 홈 화면으로 나가시겠습니까?")) {
-                returnHome();
+                if (currentGameMode === "multi") {
+                    leaveMultiRoom();
+                } else {
+                    returnHome();
+                }
             }
         };
 
@@ -1429,6 +1446,7 @@
         };
 
         function startSoloRound() {
+            if (currentGameMode !== 'solo') return;
             if (soloGame.sentenceIndex >= soloGame.sentences.length) {
                 // 문장 소진 시 재셔플
                 soloGame.sentences = [...soloGame.unit.sentences].sort(() => Math.random() - 0.5);
@@ -1481,6 +1499,7 @@
         }
 
         function startSoloRelayPhase() {
+            if (currentGameMode !== 'solo') return;
             soloGame.phase = "relay";
             document.getElementById('game-phase-label').innerText = "🗣️ 한 단어씩 순서대로 릴레이 완성하기!";
             document.getElementById('memorize-sentence-text').classList.add('hidden');
@@ -1501,6 +1520,7 @@
         }
 
         function processCurrentTurn() {
+            if (currentGameMode !== 'solo') return;
             const alivePlayers = soloGame.players.filter(p => p.isAlive);
             if (alivePlayers.length <= 1) {
                 // 게임 종료 (1명 생존)
@@ -1608,6 +1628,10 @@
         }
 
         window.selectWordChoice = (selectedWord) => {
+            if (currentGameMode === "multi") {
+                selectMultiWordChoice(selectedWord);
+                return;
+            }
             const targetWord = soloGame.words[soloGame.wordIndex];
             const cleanTarget = targetWord.replace(/[.,!?]/g, '').toLowerCase();
             const cleanSelected = selectedWord.replace(/[.,!?]/g, '').toLowerCase();
@@ -1629,6 +1653,10 @@
         };
 
         window.useTurnSkip = () => {
+            if (currentGameMode === "multi") {
+                useMultiTurnSkip();
+                return;
+            }
             if (timerInterval) clearInterval(timerInterval);
             playSfx('sparkle');
             setFeedMessage(`⚡ [${myProfile.name}]님이 SKIP 찬스를 사용했습니다!`);
@@ -1638,6 +1666,7 @@
 
         // AI 봇 단어 턴 처리
         function handleAiTurn(bot, targetWord) {
+            if (currentGameMode !== 'solo') return;
             if (timerInterval) clearInterval(timerInterval);
 
             // 1) 봇 Skip 사용 확률 (찬스가 있고 첫 단어 아닐 때 20%)
@@ -1665,6 +1694,7 @@
 
         // 단어 적중 성공 처리
         function handleWordSuccess(playerId) {
+            if (currentGameMode !== 'solo') return;
             if (timerInterval) clearInterval(timerInterval);
             playSfx('correct');
 
@@ -1696,6 +1726,10 @@
 
         // 트리거 버튼 클릭 처리 (플레이어 전용)
         window.handleSparkleTrigger = (type) => {
+            if (currentGameMode === "multi") {
+                handleMultiSparkleTrigger(type);
+                return;
+            }
             if (timerInterval) clearInterval(timerInterval);
 
             if (type === 'sparkle') {
@@ -1740,6 +1774,7 @@
 
         // 탈락 처리 (틀려도 문장이 끝나지 않고 다음 사람이 이어서 그 다음 단어 진행)
         function eliminateCurrentPlayer(reason) {
+            if (currentGameMode !== 'solo') return;
             if (timerInterval) clearInterval(timerInterval);
             playSfx('wrong');
             setTimeout(() => playSfx('down'), 150);
@@ -1838,6 +1873,14 @@
         // 관전 모드 조작 액션
         window.showMySoloResultNow = () => {
             if (timerInterval) clearInterval(timerInterval);
+            if (currentGameMode === 'multi') {
+                if (currentMultiRoomData) {
+                    renderMultiGameResult(currentMultiRoomData);
+                } else {
+                    returnHome();
+                }
+                return;
+            }
             const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
             const score = myPlayer ? myPlayer.score : 0;
             const correctWords = Math.floor(score / 10);
@@ -1853,6 +1896,10 @@
 
         window.restartSoloGameNow = () => {
             if (timerInterval) clearInterval(timerInterval);
+            if (currentGameMode === 'multi') {
+                returnHome();
+                return;
+            }
             startSoloGame();
         };
 
@@ -1923,6 +1970,7 @@
         // ── 최종 결과 & 명예의 전당 점수 자동 저장 화면 ──
         // ═══════════════════════════════════════════════════════════════════
         function finishGameVictory(winner) {
+            if (currentGameMode !== 'solo') return;
             const isMeWinner = (winner && (winner.id === 'me' || winner.name === myProfile.name));
             const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
             const baseScore = myPlayer ? myPlayer.score : 0;
@@ -2017,9 +2065,46 @@
         // ═══════════════════════════════════════════════════════════════════
         // ── 실시간 멀티플레이 (학급 서바이벌) ──
         // ═══════════════════════════════════════════════════════════════════
+        function getMultiWordChoices(targetWord, allSentences) {
+            const cleanTarget = (targetWord || '').replace(/[.,!?]/g, '');
+            const distractors = new Set();
+            if (allSentences && allSentences.length) {
+                allSentences.forEach(s => {
+                    s.split(/\s+/).forEach(w => {
+                        const cleanW = w.replace(/[.,!?]/g, '');
+                        if (cleanW.toLowerCase() !== cleanTarget.toLowerCase() && cleanW.length > 1) {
+                            distractors.add(cleanW);
+                        }
+                    });
+                });
+            }
+            const fallbackWords = ["play", "soccer", "music", "friend", "happy", "school", "water", "apple", "book", "like", "today", "family"];
+            fallbackWords.forEach(w => {
+                if (w.toLowerCase() !== cleanTarget.toLowerCase()) distractors.add(w);
+            });
+
+            const shuffledDist = Array.from(distractors).sort(() => Math.random() - 0.5).slice(0, 3);
+            const choices = [cleanTarget, ...shuffledDist].sort(() => Math.random() - 0.5);
+            return choices;
+        }
+
+        function getNextAlivePlayer(playerOrder, players, currentIndex) {
+            if (!playerOrder || playerOrder.length === 0) return null;
+            const total = playerOrder.length;
+            for (let i = 1; i <= total; i++) {
+                const nextIdx = (currentIndex + i) % total;
+                const name = playerOrder[nextIdx];
+                if (players[name] && players[name].isAlive) {
+                    return { nextIndex: nextIdx, nextPlayer: name };
+                }
+            }
+            return null;
+        }
+
         window.createMultiRoom = async () => {
             const unitId = document.getElementById('multi-unit-select').value;
             const maxTime = parseInt(document.getElementById('multi-time-select').value, 10) || 6;
+            const hostPlays = document.getElementById('multi-host-participate') ? document.getElementById('multi-host-participate').checked : true;
             const unit = unitsData.find(u => u.id === unitId) || unitsData[0];
 
             // 4자리 랜덤 방 코드
@@ -2033,6 +2118,7 @@
                 unitId: unit.id,
                 unitName: unit.name,
                 maxTimer: maxTime,
+                hostPlays: hostPlays,
                 status: "waiting", // "waiting" | "playing" | "finished"
                 players: {
                     [myProfile.name]: {
@@ -2042,7 +2128,8 @@
                         studentNum: myProfile.studentNum,
                         avatar: myProfile.avatar,
                         isHost: true,
-                        isAlive: true,
+                        isSpectator: !hostPlays,
+                        isAlive: hostPlays,
                         score: 0
                     }
                 },
@@ -2092,6 +2179,7 @@
                         studentNum: myProfile.studentNum,
                         avatar: myProfile.avatar,
                         isHost: false,
+                        isSpectator: false,
                         isAlive: true,
                         score: 0
                     }
@@ -2117,39 +2205,53 @@
                 }
 
                 const data = snap.data();
-                document.getElementById('lobby-room-code').innerText = data.roomId;
-                document.getElementById('lobby-unit-name').innerText = data.unitName;
+                currentMultiRoomData = data;
+                window.currentMultiRoomData = data;
 
-                const players = Object.values(data.players || {});
-                document.getElementById('lobby-player-count').innerText = players.length;
+                if (data.status === 'waiting') {
+                    document.getElementById('lobby-room-code').innerText = data.roomId;
+                    document.getElementById('lobby-unit-name').innerText = data.unitName;
 
-                // 대기실 참가자 목록 렌더링
-                const pList = document.getElementById('lobby-player-list');
-                pList.innerHTML = players.map(p => {
-                    const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(p.name || '') : (p.name || '');
-                    const safeGrade = window.WaurimalSanitize ? window.WaurimalSanitize(String(p.grade || '')) : (p.grade || '');
-                    const safeClass = window.WaurimalSanitize ? window.WaurimalSanitize(String(p.classNum || '')) : (p.classNum || '');
-                    return `
-                    <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-2xs">
-                        <span class="text-2xl">${p.avatar}</span>
-                        <div class="text-left overflow-hidden">
-                            <div class="font-black text-xs text-slate-800 truncate flex items-center gap-1">
-                                <span>${safeName}</span>
-                                ${p.isHost ? '<i class="fas fa-crown text-[10px] text-amber-500"></i>' : ''}
+                    const players = Object.values(data.players || {});
+                    const activeCount = players.filter(p => !p.isSpectator).length;
+                    document.getElementById('lobby-player-count').innerText = activeCount;
+
+                    // 대기실 참가자 목록 렌더링
+                    const pList = document.getElementById('lobby-player-list');
+                    pList.innerHTML = players.map(p => {
+                        const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(p.name || '') : (p.name || '');
+                        const safeGrade = window.WaurimalSanitize ? window.WaurimalSanitize(String(p.grade || '')) : (p.grade || '');
+                        const safeClass = window.WaurimalSanitize ? window.WaurimalSanitize(String(p.classNum || '')) : (p.classNum || '');
+                        const roleLabel = p.isSpectator ? '👑 교사용 중계 (관전)' : (p.isHost ? '👑 방장 (참가)' : `${safeGrade}학년 ${safeClass}반`);
+                        return `
+                        <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center gap-2 shadow-2xs">
+                            <span class="text-2xl">${p.avatar || '🐥'}</span>
+                            <div class="text-left overflow-hidden">
+                                <div class="font-black text-xs text-slate-800 truncate flex items-center gap-1">
+                                    <span>${safeName}</span>
+                                    ${p.isHost ? '<i class="fas fa-crown text-[10px] text-amber-500"></i>' : ''}
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-bold">${roleLabel}</div>
                             </div>
-                            <div class="text-[10px] text-slate-500 font-bold">${safeGrade}학년 ${safeClass}반</div>
                         </div>
-                    </div>
-                `;
-                }).join('');
+                    `;
+                    }).join('');
 
-                // 호스트 vs 게스트 UI 분기
-                document.getElementById('lobby-host-controls').classList.toggle('hidden', !isHost);
-                document.getElementById('lobby-guest-waiting').classList.toggle('hidden', isHost);
+                    // 호스트 vs 게스트 UI 분기
+                    document.getElementById('lobby-host-controls').classList.toggle('hidden', !isHost);
+                    document.getElementById('lobby-guest-waiting').classList.toggle('hidden', isHost);
 
-                // 게임 시작 감지
-                if (data.status === 'playing') {
-                    startMultiplayGameClient(data);
+                } else if (data.status === 'playing') {
+                    currentGameMode = "multi";
+                    const gameScreen = document.getElementById('screen-game');
+                    if (gameScreen && gameScreen.classList.contains('hidden')) {
+                        showScreen('screen-game');
+                    }
+                    renderMultiGameUI(data);
+
+                } else if (data.status === 'finished') {
+                    currentGameMode = "multi";
+                    renderMultiGameResult(data);
                 }
             });
         }
@@ -2160,53 +2262,593 @@
             const snap = await getDoc(roomRef);
             if (!snap.exists()) return;
 
-            const unit = unitsData.find(u => u.id === snap.data().unitId) || unitsData[0];
-            const players = Object.values(snap.data().players || {});
+            const data = snap.data();
+            const unit = unitsData.find(u => u.id === data.unitId) || unitsData[0];
+            const allPlayers = Object.values(data.players || {});
+            const playingPlayers = allPlayers.filter(p => !p.isSpectator);
 
-            if (players.length < 2) {
-                alert("멀티플레이를 시작하려면 최소 2명 이상의 학생이 입장해야 합니다.");
+            if (playingPlayers.length < 2) {
+                alert("멀티플레이를 시작하려면 최소 2명 이상의 플레이어가 필요합니다.");
                 return;
             }
 
+            // 문장 셔플 및 플레이어 순서 셔플
+            const sentences = [...unit.sentences].sort(() => Math.random() - 0.5);
+            const firstSentence = sentences[0];
+            const words = firstSentence.trim().split(/\s+/);
+            const playerOrder = playingPlayers.map(p => p.name).sort(() => Math.random() - 0.5);
+
+            // 참가자 생존 및 점수 리셋
+            const updatedPlayers = {};
+            allPlayers.forEach(p => {
+                updatedPlayers[p.name] = {
+                    ...p,
+                    isAlive: !p.isSpectator,
+                    score: 0
+                };
+            });
+
+            const maxTimer = data.maxTimer || 6;
+            const initialChoices = getMultiWordChoices(words[0], sentences);
+
             await updateDoc(roomRef, {
                 status: 'playing',
+                sentences: sentences,
                 sentenceIndex: 0,
-                sentences: [...unit.sentences].sort(() => Math.random() - 0.5),
-                currentTurn: players[0].name
+                roundNumber: 1,
+                currentSentence: firstSentence,
+                words: words,
+                wordIndex: 0,
+                revealedWords: {},
+                phase: 'memorize',
+                players: updatedPlayers,
+                playerOrder: playerOrder,
+                currentTurnPlayer: playerOrder[0],
+                currentTurnIndex: 0,
+                turnChoices: initialChoices,
+                hasSkipChance: Math.random() < 0.45,
+                turnDuration: maxTimer,
+                turnStartedAt: Date.now(),
+                lastAction: {
+                    type: 'game_start',
+                    playerName: '',
+                    msg: '새로운 라운드 시작! 문장을 집중해서 암기하세요.',
+                    timestamp: Date.now()
+                }
             });
         };
 
-        function startMultiplayGameClient(roomData) {
-            currentGameMode = "multi";
-            // 멀티플레이 플레이어 셋업 후 게임 화면 시작
-            const unit = unitsData.find(u => u.id === roomData.unitId) || unitsData[0];
-            const players = Object.values(roomData.players || {}).map(p => ({
-                id: p.name,
-                name: p.name,
-                avatar: p.avatar,
-                isAi: false,
-                isAlive: true,
-                score: 0
-            }));
+        function startMultiCountdown(remainSeconds, totalSeconds, onTimeout) {
+            if (timerInterval) clearInterval(timerInterval);
+            let remain = remainSeconds;
+            const bar = document.getElementById('game-timer-bar');
+            const num = document.getElementById('game-timer-seconds');
+            num.innerText = Math.ceil(remain);
+            bar.style.width = `${Math.min(100, Math.max(0, (remain / totalSeconds) * 100))}%`;
 
-            soloGame = {
-                unit: unit,
-                difficulty: "normal",
-                sentences: roomData.sentences || unit.sentences,
-                sentenceIndex: 0,
-                players: players,
-                currentTurnIndex: 0,
-                phase: "memorize",
-                currentSentence: "",
-                words: [],
+            if (remain <= 0) {
+                if (onTimeout) onTimeout();
+                return;
+            }
+
+            timerInterval = setInterval(() => {
+                remain -= 0.1;
+                if (remain <= 0) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    num.innerText = 0;
+                    bar.style.width = '0%';
+                    if (onTimeout) onTimeout();
+                } else {
+                    num.innerText = Math.ceil(remain);
+                    bar.style.width = `${Math.min(100, Math.max(0, (remain / totalSeconds) * 100))}%`;
+                    if (remain <= 2.5 && Math.floor(remain * 10) % 5 === 0) {
+                        playSfx('tick');
+                    }
+                }
+            }, 100);
+        }
+
+        function renderMultiGameUI(data) {
+            // 1. 헤더 배지 및 정보
+            document.getElementById('game-round-badge').innerText = `Round ${data.roundNumber || ((data.sentenceIndex || 0) + 1)}`;
+            document.getElementById('game-unit-title').innerText = data.unitName || 'Sparkle DIE';
+            document.getElementById('game-skip-badge').classList.toggle('hidden', !data.hasSkipChance);
+            const aliveCount = (data.playerOrder || []).filter(name => data.players[name] && data.players[name].isAlive).length;
+            document.getElementById('game-alive-count').innerText = aliveCount;
+
+            // 2. 효과음 및 라이브 피드
+            if (data.lastAction && data.lastAction.timestamp && data.lastAction.timestamp !== lastHandledActionTime) {
+                lastHandledActionTime = data.lastAction.timestamp;
+                const actType = data.lastAction.type;
+                if (actType === 'correct') playSfx('correct');
+                else if (actType === 'eliminated' || actType === 'wrong') playSfx('wrong');
+                else if (actType === 'sparkle' || actType === 'sparkle_start' || actType === 'game_start') playSfx('sparkle');
+                else if (actType === 'die') playSfx('die');
+                else if (actType === 'down' || actType === 'down_and_next_round') playSfx('down');
+            }
+            if (data.lastAction && data.lastAction.msg) {
+                setFeedMessage(data.lastAction.msg);
+            }
+
+            // 3. 플레이어 아레나 카드
+            const arena = document.getElementById('game-arena');
+            const order = data.playerOrder || Object.keys(data.players || {});
+            arena.innerHTML = order.map(name => {
+                const p = data.players[name];
+                if (!p) return '';
+                const isCurrent = (name === data.currentTurnPlayer && p.isAlive && data.phase !== 'memorize');
+                const safeName = window.WaurimalSanitize ? window.WaurimalSanitize(p.name || '') : (p.name || '');
+                return `
+                    <div class="p-1.5 sm:p-2 rounded-xl text-center transition-all ${isCurrent ? 'bg-amber-50 border-2 border-amber-500 shadow-md ring-2 ring-amber-300' : 'bg-white border-2 border-slate-200 shadow-2xs'} ${!p.isAlive ? 'opacity-50 grayscale bg-slate-100 border-slate-200' : ''}">
+                        <div class="text-xl sm:text-2xl mb-0.5 relative inline-block">
+                            ${p.avatar || '🐥'}
+                            ${!p.isAlive ? '<span class="absolute -top-1 -right-1 text-[9px] bg-rose-600 text-white font-black px-1.5 py-0.2 rounded-full shadow-xs">OUT</span>' : ''}
+                        </div>
+                        <div class="text-[11px] font-black truncate ${isCurrent ? 'text-pink-600' : 'text-slate-800'}">${safeName}</div>
+                        <div class="text-[10px] ${p.isAlive ? 'text-amber-600 font-bold' : 'text-slate-400 font-medium'}">${p.isAlive ? `${p.score || 0}점` : '탈락'}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // 4. 관전 안내 배너
+            const myP = data.players[myProfile.name];
+            const isMeEliminated = (myP && !myP.isAlive && !myP.isSpectator);
+            const specBox = document.getElementById('game-spectator-box');
+            if (specBox) {
+                specBox.classList.toggle('hidden', !isMeEliminated);
+            }
+
+            // 5. 단계별 보드 및 턴 컨트롤
+            const isMyTurn = (data.currentTurnPlayer === myProfile.name && data.phase !== 'memorize');
+            document.getElementById('turn-current-player-name').innerText = data.currentTurnPlayer || '---';
+
+            if (data.phase === 'memorize') {
+                document.getElementById('game-phase-label').innerText = "🧠 문장을 집중해서 암기하세요!";
+                const sentEl = document.getElementById('memorize-sentence-text');
+                const sentKr = document.getElementById('memorize-sentence-kr');
+                sentEl.innerText = data.currentSentence || '';
+                sentEl.classList.remove('hidden');
+                sentKr.innerText = "주어진 시간 후 문장이 가려집니다.";
+                sentKr.classList.remove('hidden');
+
+                document.getElementById('relay-slots-container').classList.add('hidden');
+                document.getElementById('turn-word-options').classList.add('hidden');
+                document.getElementById('turn-trigger-box').classList.add('hidden');
+                document.getElementById('turn-waiting-box').classList.add('hidden');
+
+            } else if (data.phase === 'relay') {
+                document.getElementById('game-phase-label').innerText = "🗣️ 한 단어씩 순서대로 릴레이 완성하기!";
+                document.getElementById('memorize-sentence-text').classList.add('hidden');
+                document.getElementById('memorize-sentence-kr').classList.add('hidden');
+
+                const slotsCont = document.getElementById('relay-slots-container');
+                slotsCont.classList.remove('hidden');
+                slotsCont.innerHTML = (data.words || []).map((w, idx) => {
+                    const rev = data.revealedWords && data.revealedWords[idx];
+                    if (rev) {
+                        if (rev.status === 'correct') {
+                            return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 min-w-[70px] text-center shadow-md shadow-emerald-500/20">${rev.word}</div>`;
+                        } else {
+                            return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-rose-500 bg-rose-500/20 text-rose-300 min-w-[70px] text-center shadow-md shadow-rose-500/20">${rev.word}</div>`;
+                        }
+                    } else if (idx === data.wordIndex) {
+                        return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-amber-400 bg-amber-400/20 text-amber-300 min-w-[70px] text-center animate-pulse">?</div>`;
+                    } else {
+                        return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-slate-700 bg-slate-800 text-slate-500 min-w-[70px] text-center">?</div>`;
+                    }
+                }).join('');
+
+                if (isMyTurn) {
+                    document.getElementById('turn-waiting-box').classList.add('hidden');
+                    document.getElementById('turn-word-options').classList.remove('hidden');
+                    document.getElementById('turn-trigger-box').classList.add('hidden');
+
+                    const canSkip = data.hasSkipChance && data.wordIndex > 0;
+                    document.getElementById('btn-turn-skip').classList.toggle('hidden', !canSkip);
+
+                    const choices = data.turnChoices || getMultiWordChoices(data.words[data.wordIndex], data.sentences);
+                    const grid = document.getElementById('word-buttons-grid');
+                    grid.innerHTML = choices.map(w => `
+                        <button type="button" onclick="selectWordChoice('${w}')" class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
+                            ${w}
+                        </button>
+                    `).join('');
+                    document.getElementById('turn-word-input').value = "";
+                } else {
+                    document.getElementById('turn-waiting-box').classList.remove('hidden');
+                    document.getElementById('turn-word-options').classList.add('hidden');
+                    document.getElementById('turn-trigger-box').classList.add('hidden');
+                }
+
+            } else if (['sparkle', 'die', 'down'].includes(data.phase)) {
+                if (data.phase === 'sparkle') document.getElementById('game-phase-label').innerText = "💥 문장 완성! 폭탄 트리거 발동! (SPARKLE!)";
+                else if (data.phase === 'die') document.getElementById('game-phase-label').innerText = "💥 폭탄 카운트다운! (DIE!)";
+                else if (data.phase === 'down') document.getElementById('game-phase-label').innerText = "💥 마지막 폭탄! (DOWN!)";
+
+                document.getElementById('memorize-sentence-text').classList.add('hidden');
+                document.getElementById('memorize-sentence-kr').classList.add('hidden');
+                document.getElementById('relay-slots-container').classList.remove('hidden');
+
+                if (isMyTurn) {
+                    document.getElementById('turn-waiting-box').classList.add('hidden');
+                    document.getElementById('turn-word-options').classList.add('hidden');
+                    document.getElementById('turn-trigger-box').classList.remove('hidden');
+
+                    document.getElementById('btn-trigger-sparkle').classList.toggle('hidden', data.phase !== 'sparkle');
+                    document.getElementById('btn-trigger-die').classList.toggle('hidden', data.phase !== 'die');
+                    document.getElementById('btn-trigger-down').classList.toggle('hidden', data.phase !== 'down');
+                } else {
+                    document.getElementById('turn-waiting-box').classList.remove('hidden');
+                    document.getElementById('turn-word-options').classList.add('hidden');
+                    document.getElementById('turn-trigger-box').classList.add('hidden');
+                }
+            }
+
+            // 6. 타이머 및 호스트 감시 타이머 (Watchdog)
+            const duration = data.turnDuration || 5;
+            const elapsed = (Date.now() - (data.turnStartedAt || Date.now())) / 1000;
+            const remain = Math.max(0, duration - elapsed);
+
+            startMultiCountdown(remain, duration, async () => {
+                if (isMyTurn) {
+                    if (data.phase === 'relay') {
+                        await eliminateMultiPlayer(myProfile.name, "시간 초과로 탈락했습니다!");
+                    } else if (data.phase === 'sparkle' || data.phase === 'die') {
+                        await eliminateMultiPlayer(myProfile.name, "시간 초과로 버튼을 누르지 못해 탈락했습니다!");
+                    } else if (data.phase === 'down') {
+                        await eliminateMultiPlayer(myProfile.name, "DOWN! 에 걸려 탈락했습니다!");
+                    }
+                }
+            });
+
+            if (hostWatchdogTimer) clearTimeout(hostWatchdogTimer);
+            if (isHost) {
+                if (data.phase === 'memorize') {
+                    const timeToWait = Math.max(0, (remain * 1000) + 150);
+                    hostWatchdogTimer = setTimeout(async () => {
+                        if (currentMultiRoomData && currentMultiRoomData.phase === 'memorize') {
+                            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+                            const words = currentMultiRoomData.words;
+                            const sentences = currentMultiRoomData.sentences;
+                            const initialChoices = getMultiWordChoices(words[0], sentences);
+                            await updateDoc(roomRef, {
+                                phase: 'relay',
+                                wordIndex: 0,
+                                revealedWords: {},
+                                turnChoices: initialChoices,
+                                turnStartedAt: Date.now(),
+                                turnDuration: 5,
+                                lastAction: {
+                                    type: 'relay_start',
+                                    msg: '🗣️ 문장 암기 종료! 한 단어씩 순서대로 릴레이를 시작합니다!',
+                                    timestamp: Date.now()
+                                }
+                            });
+                        }
+                    }, timeToWait);
+                } else {
+                    // 참가자 미응답/네트워크 지연 시 호스트가 2.5초 후 타임아웃 강제 처리
+                    const timeToWait = Math.max(0, (remain * 1000) + 2500);
+                    hostWatchdogTimer = setTimeout(async () => {
+                        if (currentMultiRoomData && currentMultiRoomData.status === 'playing' && currentMultiRoomData.currentTurnPlayer === data.currentTurnPlayer) {
+                            console.log("Host watchdog: eliminating inactive turn player:", data.currentTurnPlayer);
+                            await eliminateMultiPlayer(data.currentTurnPlayer, "시간 초과로 탈락했습니다!");
+                        }
+                    }, timeToWait);
+                }
+            }
+        }
+
+        async function selectMultiWordChoice(selectedWord) {
+            if (!currentMultiRoomData || !currentRoomId) return;
+            const data = currentMultiRoomData;
+            if (data.phase !== 'relay' || data.currentTurnPlayer !== myProfile.name) return;
+
+            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+            const targetWord = data.words[data.wordIndex];
+            const cleanTarget = (targetWord || '').replace(/[.,!?]/g, '').toLowerCase();
+            const cleanSelected = (selectedWord || '').replace(/[.,!?]/g, '').toLowerCase();
+
+            const isCorrect = (cleanTarget === cleanSelected);
+            const now = Date.now();
+
+            if (isCorrect) {
+                const nextWordIdx = data.wordIndex + 1;
+                const myScore = ((data.players[myProfile.name]?.score) || 0) + 10;
+                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex);
+
+                if (nextWordIdx >= data.words.length) {
+                    await updateDoc(roomRef, {
+                        [`players.${myProfile.name}.score`]: myScore,
+                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'correct' },
+                        wordIndex: nextWordIdx,
+                        phase: 'sparkle',
+                        currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
+                        currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
+                        turnStartedAt: now,
+                        turnDuration: 4,
+                        lastAction: {
+                            type: 'sparkle_start',
+                            playerName: myProfile.name,
+                            msg: `👏 [${myProfile.name}]님이 "${targetWord}" 적중! 문장 완성! 폭탄 트리거(SPARKLE) 시작!`,
+                            timestamp: now
+                        }
+                    });
+                } else {
+                    const nextChoices = getMultiWordChoices(data.words[nextWordIdx], data.sentences);
+                    await updateDoc(roomRef, {
+                        [`players.${myProfile.name}.score`]: myScore,
+                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'correct' },
+                        wordIndex: nextWordIdx,
+                        phase: 'relay',
+                        turnChoices: nextChoices,
+                        currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
+                        currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
+                        turnStartedAt: now,
+                        turnDuration: 5,
+                        lastAction: {
+                            type: 'correct',
+                            playerName: myProfile.name,
+                            msg: `👏 [${myProfile.name}]님이 "${targetWord}" 적중 성공!`,
+                            timestamp: now
+                        }
+                    });
+                }
+            } else {
+                await eliminateMultiPlayer(myProfile.name, `"${selectedWord}"는 잘못된 단어입니다! (정답: "${targetWord}")`);
+            }
+        }
+
+        async function eliminateMultiPlayer(playerName, reason) {
+            if (!currentMultiRoomData || !currentRoomId) return;
+            const data = currentMultiRoomData;
+            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+            const now = Date.now();
+
+            const updatedPlayers = { ...data.players };
+            if (updatedPlayers[playerName]) {
+                updatedPlayers[playerName] = { ...updatedPlayers[playerName], isAlive: false };
+            }
+
+            const alivePlayers = (data.playerOrder || []).filter(n => updatedPlayers[n] && updatedPlayers[n].isAlive);
+
+            if (alivePlayers.length <= 1) {
+                const winnerName = alivePlayers[0] || playerName;
+                const winnerObj = updatedPlayers[winnerName] || { name: winnerName, score: 0, avatar: '👑' };
+                const finalWinnerScore = (winnerObj.score || 0) + 50;
+
+                await updateDoc(roomRef, {
+                    [`players.${playerName}.isAlive`]: false,
+                    status: 'finished',
+                    winner: {
+                        name: winnerName,
+                        avatar: winnerObj.avatar || '👑',
+                        score: finalWinnerScore
+                    },
+                    lastAction: {
+                        type: 'victory',
+                        playerName: winnerName,
+                        msg: `👑 [${winnerName}]님이 최후의 생존자로 최종 우승했습니다!`,
+                        timestamp: now
+                    }
+                });
+                return;
+            }
+
+            const next = getNextAlivePlayer(data.playerOrder, updatedPlayers, data.currentTurnIndex);
+
+            if (data.phase === 'relay') {
+                const nextWordIdx = data.wordIndex + 1;
+                const targetWord = data.words[data.wordIndex];
+
+                if (nextWordIdx >= data.words.length) {
+                    await updateDoc(roomRef, {
+                        [`players.${playerName}.isAlive`]: false,
+                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'wrong' },
+                        wordIndex: nextWordIdx,
+                        phase: 'sparkle',
+                        currentTurnPlayer: next.nextPlayer,
+                        currentTurnIndex: next.nextIndex,
+                        turnStartedAt: now,
+                        turnDuration: 4,
+                        lastAction: {
+                            type: 'eliminated',
+                            playerName: playerName,
+                            msg: `💥 [${playerName}]님 탈락! ${reason} 다음 참가자가 폭탄 트리거(SPARKLE)를 진행합니다.`,
+                            timestamp: now
+                        }
+                    });
+                } else {
+                    const nextChoices = getMultiWordChoices(data.words[nextWordIdx], data.sentences);
+                    await updateDoc(roomRef, {
+                        [`players.${playerName}.isAlive`]: false,
+                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'wrong' },
+                        wordIndex: nextWordIdx,
+                        phase: 'relay',
+                        turnChoices: nextChoices,
+                        currentTurnPlayer: next.nextPlayer,
+                        currentTurnIndex: next.nextIndex,
+                        turnStartedAt: now,
+                        turnDuration: 5,
+                        lastAction: {
+                            type: 'eliminated',
+                            playerName: playerName,
+                            msg: `💥 [${playerName}]님 탈락! ${reason} 다음 참가자가 이어서 진행합니다.`,
+                            timestamp: now
+                        }
+                    });
+                }
+            } else if (data.phase === 'sparkle' || data.phase === 'die') {
+                await updateDoc(roomRef, {
+                    [`players.${playerName}.isAlive`]: false,
+                    currentTurnPlayer: next.nextPlayer,
+                    currentTurnIndex: next.nextIndex,
+                    turnStartedAt: now,
+                    turnDuration: 4,
+                    lastAction: {
+                        type: 'eliminated',
+                        playerName: playerName,
+                        msg: `💥 [${playerName}]님 탈락! ${reason}`,
+                        timestamp: now
+                    }
+                });
+            } else if (data.phase === 'down') {
+                await startMultiNextSentence(roomRef, data, updatedPlayers, next, playerName);
+            }
+        }
+
+        async function startMultiNextSentence(roomRef, data, updatedPlayers, next, eliminatedPlayerName) {
+            const now = Date.now();
+            let nextSentenceIdx = (data.sentenceIndex || 0) + 1;
+            let sentences = data.sentences;
+            if (nextSentenceIdx >= sentences.length) {
+                const unit = unitsData.find(u => u.id === data.unitId) || unitsData[0];
+                sentences = [...unit.sentences].sort(() => Math.random() - 0.5);
+                nextSentenceIdx = 0;
+            }
+
+            const nextSentence = sentences[nextSentenceIdx];
+            const words = nextSentence.trim().split(/\s+/);
+            const maxTimer = data.maxTimer || 6;
+            const initialChoices = getMultiWordChoices(words[0], sentences);
+
+            await updateDoc(roomRef, {
+                [`players.${eliminatedPlayerName}.isAlive`]: false,
+                sentenceIndex: nextSentenceIdx,
+                sentences: sentences,
+                roundNumber: (data.roundNumber || 1) + 1,
+                currentSentence: nextSentence,
+                words: words,
                 wordIndex: 0,
-                hasSkipChance: false,
-                roundTimer: roomData.maxTimer || 6,
-                maxTimer: roomData.maxTimer || 6
-            };
+                revealedWords: {},
+                phase: 'memorize',
+                currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
+                currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
+                turnChoices: initialChoices,
+                hasSkipChance: Math.random() < 0.45,
+                turnDuration: maxTimer,
+                turnStartedAt: now,
+                lastAction: {
+                    type: 'down_and_next_round',
+                    playerName: eliminatedPlayerName,
+                    msg: `💥 [${eliminatedPlayerName}]님이 DOWN! 에 걸려 자리에 앉았습니다! 새로운 라운드 문장을 암기하세요.`,
+                    timestamp: now
+                }
+            });
+        }
 
-            showScreen('screen-game');
-            startSoloRound();
+        async function handleMultiSparkleTrigger(type) {
+            if (!currentMultiRoomData || !currentRoomId) return;
+            const data = currentMultiRoomData;
+            if (data.currentTurnPlayer !== myProfile.name) return;
+
+            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+            const now = Date.now();
+            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex);
+
+            if (type === 'sparkle' && data.phase === 'sparkle') {
+                await updateDoc(roomRef, {
+                    phase: 'die',
+                    currentTurnPlayer: next.nextPlayer,
+                    currentTurnIndex: next.nextIndex,
+                    turnStartedAt: now,
+                    turnDuration: 4,
+                    lastAction: {
+                        type: 'sparkle',
+                        playerName: myProfile.name,
+                        msg: `✨ [${myProfile.name}]님이 SPARKLE! 을 외쳤습니다! 다음 참가자는 DIE!`,
+                        timestamp: now
+                    }
+                });
+            } else if (type === 'die' && data.phase === 'die') {
+                await updateDoc(roomRef, {
+                    phase: 'down',
+                    currentTurnPlayer: next.nextPlayer,
+                    currentTurnIndex: next.nextIndex,
+                    turnStartedAt: now,
+                    turnDuration: 4,
+                    lastAction: {
+                        type: 'die',
+                        playerName: myProfile.name,
+                        msg: `💀 [${myProfile.name}]님이 DIE! 를 외쳤습니다! 다음 참가자는 DOWN!`,
+                        timestamp: now
+                    }
+                });
+            } else if (type === 'down' && data.phase === 'down') {
+                await eliminateMultiPlayer(myProfile.name, "DOWN! 에 걸려 자리에 앉았습니다!");
+            }
+        }
+
+        async function useMultiTurnSkip() {
+            if (!currentMultiRoomData || !currentRoomId) return;
+            const data = currentMultiRoomData;
+            if (data.phase !== 'relay' || data.currentTurnPlayer !== myProfile.name) return;
+            if (!data.hasSkipChance || data.wordIndex <= 0) return;
+
+            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+            const now = Date.now();
+            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex);
+
+            await updateDoc(roomRef, {
+                currentTurnPlayer: next.nextPlayer,
+                currentTurnIndex: next.nextIndex,
+                turnStartedAt: now,
+                turnDuration: 5,
+                lastAction: {
+                    type: 'skip',
+                    playerName: myProfile.name,
+                    msg: `⚡ [${myProfile.name}]님이 SKIP 찬스를 사용했습니다!`,
+                    timestamp: now
+                }
+            });
+        }
+
+        async function renderMultiGameResult(data) {
+            if (timerInterval) clearInterval(timerInterval);
+            if (hostWatchdogTimer) clearTimeout(hostWatchdogTimer);
+            document.getElementById('game-spectator-box')?.classList.add('hidden');
+            showScreen('screen-result');
+
+            const winner = data.winner;
+            const isMeWinner = (winner && winner.name === myProfile.name);
+            const myPlayer = data.players[myProfile.name];
+            const finalScore = isMeWinner ? (winner.score || 0) : (myPlayer ? myPlayer.score : 0);
+            const resultLabel = isMeWinner ? '우승' : (myPlayer && !myPlayer.isSpectator ? '탈락' : '참여');
+
+            if (isMeWinner) {
+                playSfx('fanfare');
+                try {
+                    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+                } catch(e) {}
+                document.getElementById('result-header-icon').innerText = '👑';
+                document.getElementById('result-header-title').innerText = '실시간 대결 우승!';
+                document.getElementById('result-header-desc').innerText = '최후의 1인으로 학급 대결에서 승리했습니다!';
+                document.getElementById('result-header-desc').className = 'text-xs font-bold text-amber-600';
+                document.getElementById('result-player-badge').innerText = '🏆 최종 우승';
+                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 border border-amber-300';
+            } else {
+                playSfx('down');
+                document.getElementById('result-header-icon').innerText = '🪑';
+                document.getElementById('result-header-title').innerText = '학급 대결 종료';
+                document.getElementById('result-header-desc').innerText = winner ? `[${winner.name}]님이 우승했습니다!` : '대결이 종료되었습니다.';
+                document.getElementById('result-header-desc').className = 'text-xs font-bold text-slate-500';
+                document.getElementById('result-player-badge').innerText = isHost && myPlayer?.isSpectator ? '👑 교사용 중계 완료' : '🪑 대결 완료';
+                document.getElementById('result-player-badge').className = 'px-3 py-1 rounded-full text-xs font-black bg-slate-200 text-slate-700 border border-slate-300';
+            }
+
+            document.getElementById('result-player-avatar').innerText = myProfile.avatar || '🐥';
+            document.getElementById('result-player-name').innerText = myProfile.name || '학생';
+            document.getElementById('result-player-info').innerText = `${myProfile.grade}학년 ${myProfile.classNum}반 ${myProfile.studentNum}번`;
+            document.getElementById('result-final-score').innerText = `${finalScore}점`;
+            document.getElementById('result-words-count').innerText = `${Math.floor(finalScore / 10)}단어`;
+            document.getElementById('result-bonus-score').innerText = isMeWinner ? '+50점' : '+0점';
+            document.getElementById('result-unit-label').innerText = data.unitName || 'Lesson 9';
+
+            // 명예의 전당 저장 (직접 참가한 학생일 때만)
+            if (myPlayer && !myPlayer.isSpectator) {
+                await saveScoreToHallOfFame(finalScore, resultLabel, data.unitId || 'unit_lesson_9_canva');
+            }
         }
 
         window.leaveMultiRoom = async () => {
@@ -2217,10 +2859,12 @@
                         await deleteDoc(roomRef);
                     } else {
                         await updateDoc(roomRef, {
-                            [`players.${myProfile.name}`]: deleteDoc
+                            [`players.${myProfile.name}`]: deleteField()
                         });
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.warn("Leave room error:", e);
+                }
             }
             returnHome();
         };
