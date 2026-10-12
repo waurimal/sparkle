@@ -446,6 +446,9 @@
                     </button>
                     <span id="game-round-badge" class="px-2.5 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200 font-game font-black text-xs">Round 1/10</span>
                     <span id="game-unit-title" class="text-slate-800 font-bold max-w-[180px] truncate">Lesson 9 Sparkle DIE</span>
+                    <span id="game-direction-badge" class="hidden px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs flex items-center gap-1">
+                        <i class="fas fa-backward text-indigo-600"></i> 역방향 (BACK)
+                    </span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span id="game-skip-badge" class="hidden px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 font-bold text-xs">
@@ -511,7 +514,7 @@
                         </div>
                         <!-- 타이핑 입력창 & Skip 버튼 -->
                         <div class="flex gap-2 max-w-md mx-auto">
-                            <input type="text" id="turn-word-input" placeholder="직접 영단어 입력 (선택)" class="flex-1 p-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-pink-500">
+                            <input type="text" id="turn-word-input" placeholder="직접 영단어 입력 (또는 back/jump 치트)" class="flex-1 p-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-pink-500" onkeydown="if(event.key==='Enter') submitWordFromInput()">
                             <button type="button" onclick="submitWordFromInput()" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
                                 확인
                             </button>
@@ -519,6 +522,19 @@
                                 <i class="fas fa-bolt"></i> SKIP
                             </button>
                         </div>
+                    </div>
+
+                    <!-- 치트키 조작 바 (문장당 1회: BACK / JUMP) -->
+                    <div id="turn-cheat-bar" class="hidden flex items-center justify-center gap-2 pt-1 max-w-md mx-auto">
+                        <span id="cheat-status-badge" class="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-2xs">
+                            <i class="fas fa-wand-magic-sparkles text-indigo-500"></i> 치트키 (문장당 1회)
+                        </span>
+                        <button type="button" id="btn-cheat-back" onclick="useCheatKey('back')" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed" title="순서를 뒤로 바꾸기 (이전 사람에게 턴 넘김)">
+                            <i class="fas fa-backward"></i> BACK
+                        </button>
+                        <button type="button" id="btn-cheat-jump" onclick="useCheatKey('jump')" class="px-3.5 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:hover:bg-violet-600 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center gap-1 cursor-pointer disabled:cursor-not-allowed" title="다음 사람 건너뛰기">
+                            <i class="fas fa-forward-step"></i> JUMP
+                        </button>
                     </div>
 
                     <!-- 2) 폭탄 트리거 버튼 (SPARKLE ➔ DIE ➔ DOWN) -->
@@ -739,6 +755,16 @@
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                     <div class="font-black text-purple-600">4. Skip 찬스 & 명예의 전당</div>
                     <div>화면에 ⚡ Skip 마크가 있을 때는 자기 턴을 안전하게 다음 사람에게 넘길 수 있습니다 (첫 단어 제외). 서바이벌에서 획득한 점수는 실시간으로 명예의 전당에 안전하게 기록됩니다!</div>
+                </div>
+                <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-200 space-y-1">
+                    <div class="font-black text-indigo-700 flex items-center gap-1.5">
+                        <i class="fas fa-wand-magic-sparkles text-indigo-600"></i> 5. 치트키 (Cheat Keys) - 문장당 1회
+                    </div>
+                    <ul class="text-[11px] text-slate-700 space-y-1 mt-1 font-semibold">
+                        <li>• <strong class="text-indigo-600 font-black">BACK</strong>: 진행 순서를 반대(뒤)로 바꿉니다! (이전 차례 사람에게로 턴이 이동하며 역방향 진행)</li>
+                        <li>• <strong class="text-indigo-600 font-black">JUMP</strong>: 다음 차례 사람을 건너뛰고 그 다음 사람에게 턴을 넘깁니다!</li>
+                        <li>• ⚠️ <strong>한 문장당 딱 1회만</strong> 사용 가능하며, 직접 입력창에 <code>back</code> / <code>jump</code> 입력 또는 전용 치트 버튼을 눌러 발동할 수 있습니다.</li>
+                    </ul>
                 </div>
             </div>
             <button type="button" onclick="closeRulesModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 cursor-pointer">
@@ -1430,6 +1456,8 @@
                 sentenceIndex: 0,
                 players: players,
                 currentTurnIndex: players.length - 1,
+                turnDirection: 1,
+                cheatUsedInSentence: false,
                 phase: "memorize",
                 currentSentence: "",
                 words: [],
@@ -1458,12 +1486,17 @@
             // 특수기호 분리 및 단어 추출
             soloGame.words = rawSentence.trim().split(/\s+/);
             soloGame.wordIndex = 0;
+            soloGame.turnDirection = 1; // 새 라운드 시작 시 순방향 초기화
+            soloGame.cheatUsedInSentence = false; // 새 문장 시작 시 치트키 재충전
             soloGame.hasSkipChance = Math.random() < 0.45; // 45% 확률로 Skip 찬스 등장
 
             // UI 갱신
             document.getElementById('game-round-badge').innerText = `Round ${soloGame.sentenceIndex + 1}`;
             document.getElementById('game-unit-title').innerText = soloGame.unit.name;
             document.getElementById('game-skip-badge').classList.toggle('hidden', !soloGame.hasSkipChance);
+            const dirBadge = document.getElementById('game-direction-badge');
+            if (dirBadge) dirBadge.classList.add('hidden');
+            updateCheatUI();
 
             // 관전 모드 상태 점검
             const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
@@ -1531,6 +1564,13 @@
             const curPlayer = soloGame.players[soloGame.currentTurnIndex];
             updateArenaUI(soloGame.players, soloGame.currentTurnIndex);
             document.getElementById('turn-current-player-name').innerText = curPlayer.name;
+
+            // 방향 배지 및 치트 UI 갱신
+            const dirBadge = document.getElementById('game-direction-badge');
+            if (dirBadge) {
+                dirBadge.classList.toggle('hidden', (soloGame.turnDirection || 1) !== -1);
+            }
+            updateCheatUI();
 
             // ── A. 릴레이 단어 말하기 단계 ──
             if (soloGame.phase === "relay") {
@@ -1645,11 +1685,47 @@
             }
         };
 
+        function getCurrentTargetWord() {
+            if (currentGameMode === 'multi') {
+                if (currentMultiRoomData && currentMultiRoomData.words && currentMultiRoomData.wordIndex !== undefined) {
+                    const raw = currentMultiRoomData.words[currentMultiRoomData.wordIndex] || '';
+                    return raw.replace(/[.,!?]/g, '');
+                }
+            } else if (soloGame && soloGame.words && soloGame.wordIndex !== undefined) {
+                const raw = soloGame.words[soloGame.wordIndex] || '';
+                return raw.replace(/[.,!?]/g, '');
+            }
+            return '';
+        }
+
         window.submitWordFromInput = () => {
             const input = document.getElementById('turn-word-input');
             const val = input.value.trim();
             if (!val) return;
-            selectWordChoice(val);
+
+            const lower = val.toLowerCase();
+            const currentTarget = getCurrentTargetWord();
+            const cleanTarget = (currentTarget || '').toLowerCase();
+
+            if (lower === 'back' || lower === '/back' || lower === '!back') {
+                if (cleanTarget === 'back' && !val.startsWith('/') && !val.startsWith('!')) {
+                    selectWordChoice(val);
+                } else {
+                    input.value = '';
+                    useCheatKey('back');
+                    return;
+                }
+            } else if (lower === 'jump' || lower === '/jump' || lower === '!jump') {
+                if (cleanTarget === 'jump' && !val.startsWith('/') && !val.startsWith('!')) {
+                    selectWordChoice(val);
+                } else {
+                    input.value = '';
+                    useCheatKey('jump');
+                    return;
+                }
+            } else {
+                selectWordChoice(val);
+            }
         };
 
         window.useTurnSkip = () => {
@@ -1903,14 +1979,126 @@
             startSoloGame();
         };
 
-        // 다음 생존 플레이어에게 턴 넘기기
-        function advanceToNextAliveTurn() {
-            let count = 0;
-            do {
-                soloGame.currentTurnIndex = (soloGame.currentTurnIndex + 1) % soloGame.players.length;
-                count++;
-            } while (!soloGame.players[soloGame.currentTurnIndex].isAlive && count < soloGame.players.length);
+        // 다음 생존 플레이어 인덱스 탐색 헬퍼 (순/역방향 및 다단계 건너뛰기 지원)
+        function getNextAliveIndex(players, currentIndex, direction = 1, steps = 1) {
+            if (!players || players.length === 0) return currentIndex;
+            const len = players.length;
+            const dir = direction === -1 ? -1 : 1;
+            let current = currentIndex;
+            let stepsRemaining = steps;
+
+            while (stepsRemaining > 0) {
+                let count = 0;
+                do {
+                    current = (current + dir + len) % len;
+                    count++;
+                } while (!players[current].isAlive && count < len);
+                stepsRemaining--;
+            }
+            return current;
         }
+
+        // 다음 생존 플레이어에게 턴 넘기기 (방향 및 다단계 이동 지원)
+        function advanceToNextAliveTurn(steps = 1) {
+            soloGame.currentTurnIndex = getNextAliveIndex(soloGame.players, soloGame.currentTurnIndex, soloGame.turnDirection || 1, steps);
+        }
+
+        // 치트키 UI 갱신 (BACK / JUMP 버튼 활성화 및 상태 배지)
+        function updateCheatUI() {
+            const cheatBar = document.getElementById('turn-cheat-bar');
+            const btnBack = document.getElementById('btn-cheat-back');
+            const btnJump = document.getElementById('btn-cheat-jump');
+            const statusBadge = document.getElementById('cheat-status-badge');
+            const dirBadge = document.getElementById('game-direction-badge');
+
+            let isMyTurn = false;
+            let cheatUsed = false;
+            let direction = 1;
+
+            if (currentGameMode === 'multi') {
+                if (currentMultiRoomData) {
+                    isMyTurn = (currentMultiRoomData.currentTurnPlayer === myProfile.name && currentMultiRoomData.phase === 'relay');
+                    cheatUsed = !!currentMultiRoomData.cheatUsedInSentence;
+                    direction = currentMultiRoomData.turnDirection || 1;
+                }
+            } else if (soloGame) {
+                const curPlayer = soloGame.players[soloGame.currentTurnIndex];
+                isMyTurn = (curPlayer && curPlayer.id === 'me' && soloGame.phase === 'relay');
+                cheatUsed = !!soloGame.cheatUsedInSentence;
+                direction = soloGame.turnDirection || 1;
+            }
+
+            if (dirBadge) {
+                dirBadge.classList.toggle('hidden', direction !== -1);
+            }
+
+            if (!cheatBar) return;
+
+            if (!isMyTurn) {
+                cheatBar.classList.add('hidden');
+                return;
+            }
+
+            cheatBar.classList.remove('hidden');
+
+            if (btnBack) {
+                btnBack.disabled = cheatUsed;
+            }
+            if (btnJump) {
+                btnJump.disabled = cheatUsed;
+            }
+
+            if (statusBadge) {
+                if (cheatUsed) {
+                    statusBadge.innerHTML = `<i class="fas fa-ban text-slate-400"></i> 이번 문장 치트 사용 완료`;
+                    statusBadge.className = "text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-2xs";
+                } else {
+                    statusBadge.innerHTML = `<i class="fas fa-wand-magic-sparkles text-indigo-500"></i> 치트키 (문장당 1회)`;
+                    statusBadge.className = "text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-2xs";
+                }
+            }
+        }
+
+        // 치트키 실행 (back: 역방향 전환 및 이전 생존자에게 턴 / jump: 다음 생존자 건너뛰기)
+        window.useCheatKey = (type) => {
+            if (currentGameMode === 'multi') {
+                useMultiCheatKey(type);
+                return;
+            }
+            if (!soloGame || soloGame.phase !== 'relay') return;
+            const curPlayer = soloGame.players[soloGame.currentTurnIndex];
+            if (!curPlayer || curPlayer.id !== 'me') return;
+
+            if (soloGame.cheatUsedInSentence) {
+                playSfx('wrong');
+                setFeedMessage(`⚠️ 이번 문장에서는 이미 치트키를 사용했습니다! (문장당 1회)`);
+                return;
+            }
+
+            if (timerInterval) clearInterval(timerInterval);
+            soloGame.cheatUsedInSentence = true;
+
+            const myName = curPlayer.name || '나';
+
+            if (type === 'back') {
+                soloGame.turnDirection = (soloGame.turnDirection === 1) ? -1 : 1;
+                playSfx('sparkle');
+                advanceToNextAliveTurn(1);
+                const targetPlayer = soloGame.players[soloGame.currentTurnIndex];
+                const dirText = soloGame.turnDirection === -1 ? "역방향" : "순방향";
+                setFeedMessage(`🔄 [${myName}]님이 치트키 'BACK'을 사용했습니다! 진행 방향이 ${dirText}으로 바뀌어 [${targetPlayer.name}]님에게 턴이 넘어갑니다!`);
+            } else if (type === 'jump') {
+                playSfx('sparkle');
+                const skippedIdx = getNextAliveIndex(soloGame.players, soloGame.currentTurnIndex, soloGame.turnDirection || 1, 1);
+                const skippedPlayer = soloGame.players[skippedIdx];
+                advanceToNextAliveTurn(2);
+                const targetPlayer = soloGame.players[soloGame.currentTurnIndex];
+                setFeedMessage(`⏭️ [${myName}]님이 치트키 'JUMP'를 사용했습니다! [${skippedPlayer ? skippedPlayer.name : '다음 사람'}]님을 건너뛰고 [${targetPlayer.name}]님 차례가 됩니다!`);
+            }
+
+            updateCheatUI();
+            processCurrentTurn();
+        };
 
         // 카운트다운 타이머
         function startRoundCountdown(seconds, onTimeout) {
@@ -2088,17 +2276,30 @@
             return choices;
         }
 
-        function getNextAlivePlayer(playerOrder, players, currentIndex) {
+        function getNextAlivePlayer(playerOrder, players, currentIndex, direction = 1, steps = 1) {
             if (!playerOrder || playerOrder.length === 0) return null;
             const total = playerOrder.length;
-            for (let i = 1; i <= total; i++) {
-                const nextIdx = (currentIndex + i) % total;
-                const name = playerOrder[nextIdx];
-                if (players[name] && players[name].isAlive) {
-                    return { nextIndex: nextIdx, nextPlayer: name };
+            const dir = direction === -1 ? -1 : 1;
+            let curr = currentIndex;
+            let skipped = null;
+
+            for (let s = 1; s <= steps; s++) {
+                let found = false;
+                for (let i = 1; i <= total; i++) {
+                    const checkIdx = (curr + (dir * i) % total + total) % total;
+                    const name = playerOrder[checkIdx];
+                    if (players[name] && players[name].isAlive) {
+                        if (s === 1 && steps > 1) {
+                            skipped = { nextIndex: checkIdx, nextPlayer: name };
+                        }
+                        curr = checkIdx;
+                        found = true;
+                        break;
+                    }
                 }
+                if (!found) return null;
             }
-            return null;
+            return { nextIndex: curr, nextPlayer: playerOrder[curr], skippedPlayer: skipped };
         }
 
         window.createMultiRoom = async () => {
@@ -2305,6 +2506,8 @@
                 playerOrder: playerOrder,
                 currentTurnPlayer: playerOrder[0],
                 currentTurnIndex: 0,
+                turnDirection: 1,
+                cheatUsedInSentence: false,
                 turnChoices: initialChoices,
                 hasSkipChance: Math.random() < 0.45,
                 turnDuration: maxTimer,
@@ -2354,8 +2557,13 @@
             document.getElementById('game-round-badge').innerText = `Round ${data.roundNumber || ((data.sentenceIndex || 0) + 1)}`;
             document.getElementById('game-unit-title').innerText = data.unitName || 'Sparkle DIE';
             document.getElementById('game-skip-badge').classList.toggle('hidden', !data.hasSkipChance);
+            const dirBadge = document.getElementById('game-direction-badge');
+            if (dirBadge) {
+                dirBadge.classList.toggle('hidden', (data.turnDirection || 1) !== -1);
+            }
             const aliveCount = (data.playerOrder || []).filter(name => data.players[name] && data.players[name].isAlive).length;
             document.getElementById('game-alive-count').innerText = aliveCount;
+            updateCheatUI();
 
             // 2. 효과음 및 라이브 피드
             if (data.lastAction && data.lastAction.timestamp && data.lastAction.timestamp !== lastHandledActionTime) {
@@ -2363,7 +2571,7 @@
                 const actType = data.lastAction.type;
                 if (actType === 'correct') playSfx('correct');
                 else if (actType === 'eliminated' || actType === 'wrong') playSfx('wrong');
-                else if (actType === 'sparkle' || actType === 'sparkle_start' || actType === 'game_start') playSfx('sparkle');
+                else if (actType === 'sparkle' || actType === 'sparkle_start' || actType === 'game_start' || actType === 'cheat_back' || actType === 'cheat_jump') playSfx('sparkle');
                 else if (actType === 'die') playSfx('die');
                 else if (actType === 'down' || actType === 'down_and_next_round') playSfx('down');
             }
@@ -2556,7 +2764,7 @@
             if (isCorrect) {
                 const nextWordIdx = data.wordIndex + 1;
                 const myScore = ((data.players[myProfile.name]?.score) || 0) + 10;
-                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex);
+                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
 
                 if (nextWordIdx >= data.words.length) {
                     await updateDoc(roomRef, {
@@ -2636,7 +2844,7 @@
                 return;
             }
 
-            const next = getNextAlivePlayer(data.playerOrder, updatedPlayers, data.currentTurnIndex);
+            const next = getNextAlivePlayer(data.playerOrder, updatedPlayers, data.currentTurnIndex, data.turnDirection || 1, 1);
 
             if (data.phase === 'relay') {
                 const nextWordIdx = data.wordIndex + 1;
@@ -2722,6 +2930,8 @@
                 words: words,
                 wordIndex: 0,
                 revealedWords: {},
+                turnDirection: 1,
+                cheatUsedInSentence: false,
                 phase: 'memorize',
                 currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
                 currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
@@ -2745,7 +2955,7 @@
 
             const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
             const now = Date.now();
-            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex);
+            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
 
             if (type === 'sparkle' && data.phase === 'sparkle') {
                 await updateDoc(roomRef, {
@@ -2788,7 +2998,7 @@
 
             const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
             const now = Date.now();
-            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex);
+            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
 
             await updateDoc(roomRef, {
                 currentTurnPlayer: next.nextPlayer,
@@ -2802,6 +3012,63 @@
                     timestamp: now
                 }
             });
+        }
+
+        async function useMultiCheatKey(type) {
+            if (!currentMultiRoomData || !currentRoomId) return;
+            const data = currentMultiRoomData;
+            if (data.currentTurnPlayer !== myProfile.name || data.phase !== 'relay') return;
+
+            if (data.cheatUsedInSentence) {
+                playSfx('wrong');
+                setFeedMessage(`⚠️ 이번 문장에서는 이미 치트키를 사용했습니다! (문장당 1회)`);
+                return;
+            }
+
+            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+            const now = Date.now();
+            let dir = data.turnDirection || 1;
+            let updatePayload = {
+                cheatUsedInSentence: true
+            };
+
+            if (type === 'back') {
+                dir = (dir === 1) ? -1 : 1;
+                updatePayload.turnDirection = dir;
+                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, dir, 1);
+                if (!next) return;
+                const choices = getMultiWordChoices(data.words[data.wordIndex], data.sentences);
+                const dirText = dir === -1 ? '역방향' : '순방향';
+                updatePayload.currentTurnPlayer = next.nextPlayer;
+                updatePayload.currentTurnIndex = next.nextIndex;
+                updatePayload.turnChoices = choices;
+                updatePayload.turnStartedAt = now;
+                updatePayload.turnDuration = 5;
+                updatePayload.lastAction = {
+                    type: 'cheat_back',
+                    playerName: myProfile.name,
+                    msg: `🔄 [${myProfile.name}]님이 치트키 'BACK'을 사용했습니다! 진행 방향이 ${dirText}으로 전환되어 [${next.nextPlayer}]님에게 턴이 넘어갑니다!`,
+                    timestamp: now
+                };
+            } else if (type === 'jump') {
+                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, dir, 2);
+                if (!next) return;
+                const skippedName = next.skippedPlayer ? next.skippedPlayer.nextPlayer : '다음 사람';
+                const choices = getMultiWordChoices(data.words[data.wordIndex], data.sentences);
+                updatePayload.currentTurnPlayer = next.nextPlayer;
+                updatePayload.currentTurnIndex = next.nextIndex;
+                updatePayload.turnChoices = choices;
+                updatePayload.turnStartedAt = now;
+                updatePayload.turnDuration = 5;
+                updatePayload.lastAction = {
+                    type: 'cheat_jump',
+                    playerName: myProfile.name,
+                    msg: `⏭️ [${myProfile.name}]님이 치트키 'JUMP'를 사용했습니다! [${skippedName}]님을 건너뛰고 [${next.nextPlayer}]님 차례가 됩니다!`,
+                    timestamp: now
+                };
+            }
+
+            await updateDoc(roomRef, updatePayload);
         }
 
         async function renderMultiGameResult(data) {
