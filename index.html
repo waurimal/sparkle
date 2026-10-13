@@ -2625,21 +2625,26 @@
                 document.getElementById('turn-trigger-box').classList.add('hidden');
                 document.getElementById('turn-waiting-box').classList.add('hidden');
 
-            } else if (data.phase === 'relay') {
-                document.getElementById('game-phase-label').innerText = "🗣️ 한 단어씩 순서대로 릴레이 완성하기!";
+            } else {
+                // relay 및 sparkle / die / down 단계: 슬롯 컨테이너 항상 표시 및 마지막 단어 포함 전체 단어 렌더링
                 document.getElementById('memorize-sentence-text').classList.add('hidden');
                 document.getElementById('memorize-sentence-kr').classList.add('hidden');
 
                 const slotsCont = document.getElementById('relay-slots-container');
                 slotsCont.classList.remove('hidden');
+
+                const isTriggerPhase = ['sparkle', 'die', 'down'].includes(data.phase);
                 slotsCont.innerHTML = (data.words || []).map((w, idx) => {
-                    const rev = data.revealedWords && data.revealedWords[idx];
+                    const rev = data.revealedWords && (data.revealedWords[idx] || data.revealedWords[String(idx)]);
                     if (rev) {
                         if (rev.status === 'correct') {
-                            return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 min-w-[70px] text-center shadow-md shadow-emerald-500/20">${rev.word}</div>`;
+                            return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 min-w-[70px] text-center shadow-md shadow-emerald-500/20">${rev.word || w}</div>`;
                         } else {
-                            return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-rose-500 bg-rose-500/20 text-rose-300 min-w-[70px] text-center shadow-md shadow-rose-500/20">${rev.word}</div>`;
+                            return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-rose-500 bg-rose-500/20 text-rose-300 min-w-[70px] text-center shadow-md shadow-rose-500/20">${rev.word || w}</div>`;
                         }
+                    } else if (isTriggerPhase) {
+                        // 문장 완성 단계에서는 마지막 단어를 포함한 모든 단어가 완성 슬롯으로 밝혀짐!
+                        return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-emerald-500 bg-emerald-500/20 text-emerald-300 min-w-[70px] text-center shadow-md shadow-emerald-500/20 glow-sparkle">${w}</div>`;
                     } else if (idx === data.wordIndex) {
                         return `<div class="px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-amber-400 bg-amber-400/20 text-amber-300 min-w-[70px] text-center animate-pulse">?</div>`;
                     } else {
@@ -2647,49 +2652,49 @@
                     }
                 }).join('');
 
-                if (isMyTurn) {
-                    document.getElementById('turn-waiting-box').classList.add('hidden');
-                    document.getElementById('turn-word-options').classList.remove('hidden');
-                    document.getElementById('turn-trigger-box').classList.add('hidden');
+                if (data.phase === 'relay') {
+                    document.getElementById('game-phase-label').innerText = "🗣️ 한 단어씩 순서대로 릴레이 완성하기!";
 
-                    const canSkip = data.hasSkipChance && data.wordIndex > 0;
-                    document.getElementById('btn-turn-skip').classList.toggle('hidden', !canSkip);
+                    if (isMyTurn) {
+                        document.getElementById('turn-waiting-box').classList.add('hidden');
+                        document.getElementById('turn-word-options').classList.remove('hidden');
+                        document.getElementById('turn-trigger-box').classList.add('hidden');
 
-                    const choices = data.turnChoices || getMultiWordChoices(data.words[data.wordIndex], data.sentences);
-                    const grid = document.getElementById('word-buttons-grid');
-                    grid.innerHTML = choices.map(w => `
-                        <button type="button" onclick="selectWordChoice('${w}')" class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
-                            ${w}
-                        </button>
-                    `).join('');
-                    document.getElementById('turn-word-input').value = "";
-                } else {
-                    document.getElementById('turn-waiting-box').classList.remove('hidden');
-                    document.getElementById('turn-word-options').classList.add('hidden');
-                    document.getElementById('turn-trigger-box').classList.add('hidden');
-                }
+                        const canSkip = data.hasSkipChance && data.wordIndex > 0;
+                        document.getElementById('btn-turn-skip').classList.toggle('hidden', !canSkip);
 
-            } else if (['sparkle', 'die', 'down'].includes(data.phase)) {
-                if (data.phase === 'sparkle') document.getElementById('game-phase-label').innerText = "💥 문장 완성! 폭탄 트리거 발동! (SPARKLE!)";
-                else if (data.phase === 'die') document.getElementById('game-phase-label').innerText = "💥 폭탄 카운트다운! (DIE!)";
-                else if (data.phase === 'down') document.getElementById('game-phase-label').innerText = "💥 마지막 폭탄! (DOWN!)";
+                        const choices = data.turnChoices || getMultiWordChoices(data.words[data.wordIndex], data.sentences);
+                        const grid = document.getElementById('word-buttons-grid');
+                        grid.innerHTML = choices.map(w => `
+                            <button type="button" onclick="selectWordChoice('${w}')" class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
+                                ${w}
+                            </button>
+                        `).join('');
+                        document.getElementById('turn-word-input').value = "";
+                    } else {
+                        document.getElementById('turn-waiting-box').classList.remove('hidden');
+                        document.getElementById('turn-word-options').classList.add('hidden');
+                        document.getElementById('turn-trigger-box').classList.add('hidden');
+                    }
 
-                document.getElementById('memorize-sentence-text').classList.add('hidden');
-                document.getElementById('memorize-sentence-kr').classList.add('hidden');
-                document.getElementById('relay-slots-container').classList.remove('hidden');
+                } else if (isTriggerPhase) {
+                    if (data.phase === 'sparkle') document.getElementById('game-phase-label').innerText = "💥 문장 완성! 폭탄 트리거 발동! (SPARKLE!)";
+                    else if (data.phase === 'die') document.getElementById('game-phase-label').innerText = "💥 폭탄 카운트다운! (DIE!)";
+                    else if (data.phase === 'down') document.getElementById('game-phase-label').innerText = "💥 마지막 폭탄! (DOWN!)";
 
-                if (isMyTurn) {
-                    document.getElementById('turn-waiting-box').classList.add('hidden');
-                    document.getElementById('turn-word-options').classList.add('hidden');
-                    document.getElementById('turn-trigger-box').classList.remove('hidden');
+                    if (isMyTurn) {
+                        document.getElementById('turn-waiting-box').classList.add('hidden');
+                        document.getElementById('turn-word-options').classList.add('hidden');
+                        document.getElementById('turn-trigger-box').classList.remove('hidden');
 
-                    document.getElementById('btn-trigger-sparkle').classList.toggle('hidden', data.phase !== 'sparkle');
-                    document.getElementById('btn-trigger-die').classList.toggle('hidden', data.phase !== 'die');
-                    document.getElementById('btn-trigger-down').classList.toggle('hidden', data.phase !== 'down');
-                } else {
-                    document.getElementById('turn-waiting-box').classList.remove('hidden');
-                    document.getElementById('turn-word-options').classList.add('hidden');
-                    document.getElementById('turn-trigger-box').classList.add('hidden');
+                        document.getElementById('btn-trigger-sparkle').classList.toggle('hidden', data.phase !== 'sparkle');
+                        document.getElementById('btn-trigger-die').classList.toggle('hidden', data.phase !== 'die');
+                        document.getElementById('btn-trigger-down').classList.toggle('hidden', data.phase !== 'down');
+                    } else {
+                        document.getElementById('turn-waiting-box').classList.remove('hidden');
+                        document.getElementById('turn-word-options').classList.add('hidden');
+                        document.getElementById('turn-trigger-box').classList.add('hidden');
+                    }
                 }
             }
 
