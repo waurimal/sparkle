@@ -1000,6 +1000,64 @@
         let currentMultiRoomData = null; // 멀티플레이 실시간 Firestore 룸 데이터
         let lastHandledActionTime = 0;   // 멀티플레이 효과음 중복 방지 타임스탬프
         let hostWatchdogTimer = null;    // 호스트 턴 감시 타이머 (비정상 지연 방지)
+        let isMultiActionPending = false; // 멀티플레이 더블클릭/중복 전송 방지 락
+        let lastRenderedMultiTurnKey = null; // 멀티플레이 턴 버튼 DOM 재렌더링 씹힘 방지 키
+
+        // ─────────────────────────────────────────────────────────────────
+        // 단어 정규화 및 비교 헬퍼 (구두점, 어포스트로피, 따옴표 완벽 통일)
+        // ─────────────────────────────────────────────────────────────────
+        function normalizeSparkleWord(str) {
+            if (!str) return '';
+            return String(str)
+                .trim()
+                .toLowerCase()
+                // 스마트 어포스트로피(’ ` ‘ 등)를 표준 작은따옴표(')로 일원화
+                .replace(/[\u2018\u2019\u201A\u201B`]/g, "'")
+                // 스마트 큰따옴표(“ ”) 및 일반 큰따옴표(") 제거
+                .replace(/[\u201C\u201D\u201E\u201F"]/g, '')
+                // 단어 앞뒤에 붙은 구두점(.,!?~:;[]() 등) 제거 (단어 내부의 ' (예: don't, I'm)는 보존)
+                .replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, '')
+                .trim();
+        }
+
+        // 두 단어가 일치하는지 판정 (어포스트로피 생략 표기까지 포용)
+        function isSparkleWordMatch(wordA, wordB) {
+            const normA = normalizeSparkleWord(wordA);
+            const normB = normalizeSparkleWord(wordB);
+            if (!normA || !normB) return false;
+            if (normA === normB) return true;
+            // don't vs dont 등 어포스트로피 생략 표기까지 유연하게 포용
+            return normA.replace(/'/g, '') === normB.replace(/'/g, '');
+        }
+
+        // 안전한 단어 선택지 버튼 HTML 생성기 (어포스트로피 문법 에러 원천 차단)
+        function renderWordButtonsHTML(choices) {
+            return (choices || []).map(w => {
+                const encoded = encodeURIComponent(w);
+                return `
+                    <button type="button" 
+                            data-encoded-word="${encoded}" 
+                            onclick="handleWordButtonClick(this)" 
+                            class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
+                        ${w}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        window.handleWordButtonClick = function(btn) {
+            if (!btn || !btn.dataset.encodedWord) return;
+            const word = decodeURIComponent(btn.dataset.encodedWord);
+            if (currentGameMode === "multi") {
+                if (typeof selectMultiWordChoice === 'function') {
+                    selectMultiWordChoice(word);
+                }
+            } else {
+                if (typeof window.selectWordChoice === 'function') {
+                    window.selectWordChoice(word);
+                }
+            }
+        };
 
         // 솔로 게임 런타임
         let soloGame = {
@@ -1644,27 +1702,29 @@
         // 단어 버튼 4개 세팅 (정답 + 오답)
         function setupWordOptionButtons(targetWord) {
             const grid = document.getElementById('word-buttons-grid');
-            const cleanTarget = targetWord.replace(/[.,!?]/g, '');
+            // 원본 단어의 형태(대문자/어포스트로피 등)를 유지하되 앞뒤 구두점만 깔끔히 정제
+            const cleanTarget = String(targetWord || '').replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, '');
 
             // 오답 후보 풀 수집
             const distractors = new Set();
             soloGame.sentences.forEach(s => {
                 s.split(/\s+/).forEach(w => {
-                    const cleanW = w.replace(/[.,!?]/g, '');
-                    if (cleanW.toLowerCase() !== cleanTarget.toLowerCase() && cleanW.length > 1) {
+                    const cleanW = String(w || '').replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, '');
+                    if (!isSparkleWordMatch(cleanW, cleanTarget) && cleanW.length > 1) {
                         distractors.add(cleanW);
                     }
                 });
             });
 
+            const fallbackWords = ["play", "soccer", "music", "friend", "happy", "school", "water", "apple", "book", "like", "today", "family"];
+            fallbackWords.forEach(w => {
+                if (!isSparkleWordMatch(w, cleanTarget)) distractors.add(w);
+            });
+
             const shuffledDist = Array.from(distractors).sort(() => Math.random() - 0.5).slice(0, 3);
             const choices = [cleanTarget, ...shuffledDist].sort(() => Math.random() - 0.5);
 
-            grid.innerHTML = choices.map(w => `
-                <button type="button" onclick="selectWordChoice('${w}')" class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
-                    ${w}
-                </button>
-            `).join('');
+            grid.innerHTML = renderWordButtonsHTML(choices);
         }
 
         window.selectWordChoice = (selectedWord) => {
@@ -1672,16 +1732,22 @@
                 selectMultiWordChoice(selectedWord);
                 return;
             }
-            const targetWord = soloGame.words[soloGame.wordIndex];
-            const cleanTarget = targetWord.replace(/[.,!?]/g, '').toLowerCase();
-            const cleanSelected = selectedWord.replace(/[.,!?]/g, '').toLowerCase();
 
-            if (cleanTarget === cleanSelected) {
+            // 클릭 즉시 타이머를 정지하여 타임아웃과의 레이스 컨디션 차단
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            const targetWord = soloGame.words[soloGame.wordIndex];
+            const isCorrect = isSparkleWordMatch(targetWord, selectedWord);
+
+            if (isCorrect) {
                 // 단어 성공!
                 handleWordSuccess("me");
             } else {
                 // 단어 오류 ➔ 탈락!
-                eliminateCurrentPlayer(`"${selectedWord}"는 잘못된 단어입니다!`);
+                eliminateCurrentPlayer(`"${selectedWord}"는 잘못된 단어입니다! (정답: "${targetWord}")`);
             }
         };
 
@@ -1689,11 +1755,11 @@
             if (currentGameMode === 'multi') {
                 if (currentMultiRoomData && currentMultiRoomData.words && currentMultiRoomData.wordIndex !== undefined) {
                     const raw = currentMultiRoomData.words[currentMultiRoomData.wordIndex] || '';
-                    return raw.replace(/[.,!?]/g, '');
+                    return normalizeSparkleWord(raw);
                 }
             } else if (soloGame && soloGame.words && soloGame.wordIndex !== undefined) {
                 const raw = soloGame.words[soloGame.wordIndex] || '';
-                return raw.replace(/[.,!?]/g, '');
+                return normalizeSparkleWord(raw);
             }
             return '';
         }
@@ -1705,27 +1771,47 @@
 
             const lower = val.toLowerCase();
             const currentTarget = getCurrentTargetWord();
-            const cleanTarget = (currentTarget || '').toLowerCase();
 
             if (lower === 'back' || lower === '/back' || lower === '!back') {
-                if (cleanTarget === 'back' && !val.startsWith('/') && !val.startsWith('!')) {
-                    selectWordChoice(val);
+                if (currentTarget === 'back' && !val.startsWith('/') && !val.startsWith('!')) {
+                    if (currentGameMode === 'multi') {
+                        selectMultiWordChoice(val);
+                    } else {
+                        selectWordChoice(val);
+                    }
                 } else {
                     input.value = '';
-                    useCheatKey('back');
+                    if (currentGameMode === 'multi') {
+                        useMultiCheatKey('back');
+                    } else {
+                        useCheatKey('back');
+                    }
                     return;
                 }
             } else if (lower === 'jump' || lower === '/jump' || lower === '!jump') {
-                if (cleanTarget === 'jump' && !val.startsWith('/') && !val.startsWith('!')) {
-                    selectWordChoice(val);
+                if (currentTarget === 'jump' && !val.startsWith('/') && !val.startsWith('!')) {
+                    if (currentGameMode === 'multi') {
+                        selectMultiWordChoice(val);
+                    } else {
+                        selectWordChoice(val);
+                    }
                 } else {
                     input.value = '';
-                    useCheatKey('jump');
+                    if (currentGameMode === 'multi') {
+                        useMultiCheatKey('jump');
+                    } else {
+                        useCheatKey('jump');
+                    }
                     return;
                 }
             } else {
-                selectWordChoice(val);
+                if (currentGameMode === 'multi') {
+                    selectMultiWordChoice(val);
+                } else {
+                    selectWordChoice(val);
+                }
             }
+            input.value = '';
         };
 
         window.useTurnSkip = () => {
@@ -2254,13 +2340,13 @@
         // ── 실시간 멀티플레이 (학급 서바이벌) ──
         // ═══════════════════════════════════════════════════════════════════
         function getMultiWordChoices(targetWord, allSentences) {
-            const cleanTarget = (targetWord || '').replace(/[.,!?]/g, '');
+            const cleanTarget = String(targetWord || '').replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, '');
             const distractors = new Set();
             if (allSentences && allSentences.length) {
                 allSentences.forEach(s => {
                     s.split(/\s+/).forEach(w => {
-                        const cleanW = w.replace(/[.,!?]/g, '');
-                        if (cleanW.toLowerCase() !== cleanTarget.toLowerCase() && cleanW.length > 1) {
+                        const cleanW = String(w || '').replace(/^[^a-zA-Z0-9']+|[^a-zA-Z0-9']+$/g, '');
+                        if (!isSparkleWordMatch(cleanW, cleanTarget) && cleanW.length > 1) {
                             distractors.add(cleanW);
                         }
                     });
@@ -2268,7 +2354,7 @@
             }
             const fallbackWords = ["play", "soccer", "music", "friend", "happy", "school", "water", "apple", "book", "like", "today", "family"];
             fallbackWords.forEach(w => {
-                if (w.toLowerCase() !== cleanTarget.toLowerCase()) distractors.add(w);
+                if (!isSparkleWordMatch(w, cleanTarget)) distractors.add(w);
             });
 
             const shuffledDist = Array.from(distractors).sort(() => Math.random() - 0.5).slice(0, 3);
@@ -2608,7 +2694,9 @@
             }
 
             // 5. 단계별 보드 및 턴 컨트롤
-            const isMyTurn = (data.currentTurnPlayer === myProfile.name && data.phase !== 'memorize');
+            const turnNameTrimmed = String(data.currentTurnPlayer || '').trim();
+            const myNameTrimmed = String((myProfile && myProfile.name) || '').trim();
+            const isMyTurn = (turnNameTrimmed.length > 0 && turnNameTrimmed === myNameTrimmed && data.phase !== 'memorize');
             document.getElementById('turn-current-player-name').innerText = data.currentTurnPlayer || '---';
 
             if (data.phase === 'memorize') {
@@ -2624,6 +2712,8 @@
                 document.getElementById('turn-word-options').classList.add('hidden');
                 document.getElementById('turn-trigger-box').classList.add('hidden');
                 document.getElementById('turn-waiting-box').classList.add('hidden');
+                const grid = document.getElementById('word-buttons-grid');
+                if (grid) grid.dataset.renderedKey = "";
 
             } else {
                 // relay 및 sparkle / die / down 단계: 슬롯 컨테이너 항상 표시 및 마지막 단어 포함 전체 단어 렌더링
@@ -2665,16 +2755,19 @@
 
                         const choices = data.turnChoices || getMultiWordChoices(data.words[data.wordIndex], data.sentences);
                         const grid = document.getElementById('word-buttons-grid');
-                        grid.innerHTML = choices.map(w => `
-                            <button type="button" onclick="selectWordChoice('${w}')" class="p-2.5 sm:p-3 bg-white hover:bg-pink-600 border-2 border-slate-200 hover:border-pink-600 rounded-xl text-xs sm:text-sm font-black font-game text-slate-800 hover:text-white transition shadow-2xs hover:shadow-md active:scale-95 cursor-pointer">
-                                ${w}
-                            </button>
-                        `).join('');
-                        document.getElementById('turn-word-input').value = "";
+                        const turnKey = `multi_${data.roundNumber || 0}_${data.wordIndex}_${turnNameTrimmed}_${choices.join('|')}`;
+                        if (grid && grid.dataset.renderedKey !== turnKey) {
+                            grid.innerHTML = renderWordButtonsHTML(choices);
+                            grid.dataset.renderedKey = turnKey;
+                            const inputEl = document.getElementById('turn-word-input');
+                            if (inputEl) inputEl.value = "";
+                        }
                     } else {
                         document.getElementById('turn-waiting-box').classList.remove('hidden');
                         document.getElementById('turn-word-options').classList.add('hidden');
                         document.getElementById('turn-trigger-box').classList.add('hidden');
+                        const grid = document.getElementById('word-buttons-grid');
+                        if (grid) grid.dataset.renderedKey = "";
                     }
 
                 } else if (isTriggerPhase) {
@@ -2754,62 +2847,78 @@
         }
 
         async function selectMultiWordChoice(selectedWord) {
+            if (isMultiActionPending) return;
             if (!currentMultiRoomData || !currentRoomId) return;
+
             const data = currentMultiRoomData;
-            if (data.phase !== 'relay' || data.currentTurnPlayer !== myProfile.name) return;
+            const turnNameTrimmed = String(data.currentTurnPlayer || '').trim();
+            const myNameTrimmed = String((myProfile && myProfile.name) || '').trim();
 
-            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
-            const targetWord = data.words[data.wordIndex];
-            const cleanTarget = (targetWord || '').replace(/[.,!?]/g, '').toLowerCase();
-            const cleanSelected = (selectedWord || '').replace(/[.,!?]/g, '').toLowerCase();
+            if (data.phase !== 'relay' || !turnNameTrimmed || turnNameTrimmed !== myNameTrimmed) return;
 
-            const isCorrect = (cleanTarget === cleanSelected);
-            const now = Date.now();
+            isMultiActionPending = true;
 
-            if (isCorrect) {
-                const nextWordIdx = data.wordIndex + 1;
-                const myScore = ((data.players[myProfile.name]?.score) || 0) + 10;
-                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
+            // 클릭 즉시 로컬 타이머를 중단하여 타임아웃과의 레이스 컨디션 차단
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
 
-                if (nextWordIdx >= data.words.length) {
-                    await updateDoc(roomRef, {
-                        [`players.${myProfile.name}.score`]: myScore,
-                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'correct' },
-                        wordIndex: nextWordIdx,
-                        phase: 'sparkle',
-                        currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
-                        currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
-                        turnStartedAt: now,
-                        turnDuration: 4,
-                        lastAction: {
-                            type: 'sparkle_start',
-                            playerName: myProfile.name,
-                            msg: `👏 [${myProfile.name}]님이 "${targetWord}" 적중! 문장 완성! 폭탄 트리거(SPARKLE) 시작!`,
-                            timestamp: now
-                        }
-                    });
+            try {
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+                const targetWord = data.words[data.wordIndex];
+                const isCorrect = isSparkleWordMatch(targetWord, selectedWord);
+                const now = Date.now();
+
+                if (isCorrect) {
+                    const nextWordIdx = data.wordIndex + 1;
+                    const myScore = ((data.players[myProfile.name]?.score) || 0) + 10;
+                    const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
+
+                    if (nextWordIdx >= data.words.length) {
+                        await updateDoc(roomRef, {
+                            [`players.${myProfile.name}.score`]: myScore,
+                            [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'correct' },
+                            wordIndex: nextWordIdx,
+                            phase: 'sparkle',
+                            currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
+                            currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
+                            turnStartedAt: now,
+                            turnDuration: 4,
+                            lastAction: {
+                                type: 'sparkle_start',
+                                playerName: myProfile.name,
+                                msg: `👏 [${myProfile.name}]님이 "${targetWord}" 적중! 문장 완성! 폭탄 트리거(SPARKLE) 시작!`,
+                                timestamp: now
+                            }
+                        });
+                    } else {
+                        const nextChoices = getMultiWordChoices(data.words[nextWordIdx], data.sentences);
+                        await updateDoc(roomRef, {
+                            [`players.${myProfile.name}.score`]: myScore,
+                            [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'correct' },
+                            wordIndex: nextWordIdx,
+                            phase: 'relay',
+                            turnChoices: nextChoices,
+                            currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
+                            currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
+                            turnStartedAt: now,
+                            turnDuration: 5,
+                            lastAction: {
+                                type: 'correct',
+                                playerName: myProfile.name,
+                                msg: `👏 [${myProfile.name}]님이 "${targetWord}" 적중 성공!`,
+                                timestamp: now
+                            }
+                        });
+                    }
                 } else {
-                    const nextChoices = getMultiWordChoices(data.words[nextWordIdx], data.sentences);
-                    await updateDoc(roomRef, {
-                        [`players.${myProfile.name}.score`]: myScore,
-                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'correct' },
-                        wordIndex: nextWordIdx,
-                        phase: 'relay',
-                        turnChoices: nextChoices,
-                        currentTurnPlayer: next ? next.nextPlayer : data.currentTurnPlayer,
-                        currentTurnIndex: next ? next.nextIndex : data.currentTurnIndex,
-                        turnStartedAt: now,
-                        turnDuration: 5,
-                        lastAction: {
-                            type: 'correct',
-                            playerName: myProfile.name,
-                            msg: `👏 [${myProfile.name}]님이 "${targetWord}" 적중 성공!`,
-                            timestamp: now
-                        }
-                    });
+                    await eliminateMultiPlayer(myProfile.name, `"${selectedWord}"는 잘못된 단어입니다! (정답: "${targetWord}")`);
                 }
-            } else {
-                await eliminateMultiPlayer(myProfile.name, `"${selectedWord}"는 잘못된 단어입니다! (정답: "${targetWord}")`);
+            } catch (err) {
+                console.error("Error in selectMultiWordChoice:", err);
+            } finally {
+                isMultiActionPending = false;
             }
         }
 
@@ -2954,69 +3063,105 @@
         }
 
         async function handleMultiSparkleTrigger(type) {
+            if (isMultiActionPending) return;
             if (!currentMultiRoomData || !currentRoomId) return;
+
             const data = currentMultiRoomData;
-            if (data.currentTurnPlayer !== myProfile.name) return;
+            const turnNameTrimmed = String(data.currentTurnPlayer || '').trim();
+            const myNameTrimmed = String((myProfile && myProfile.name) || '').trim();
 
-            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
-            const now = Date.now();
-            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
+            if (!turnNameTrimmed || turnNameTrimmed !== myNameTrimmed) return;
 
-            if (type === 'sparkle' && data.phase === 'sparkle') {
-                await updateDoc(roomRef, {
-                    phase: 'die',
-                    currentTurnPlayer: next.nextPlayer,
-                    currentTurnIndex: next.nextIndex,
-                    turnStartedAt: now,
-                    turnDuration: 4,
-                    lastAction: {
-                        type: 'sparkle',
-                        playerName: myProfile.name,
-                        msg: `✨ [${myProfile.name}]님이 SPARKLE! 을 외쳤습니다! 다음 참가자는 DIE!`,
-                        timestamp: now
-                    }
-                });
-            } else if (type === 'die' && data.phase === 'die') {
-                await updateDoc(roomRef, {
-                    phase: 'down',
-                    currentTurnPlayer: next.nextPlayer,
-                    currentTurnIndex: next.nextIndex,
-                    turnStartedAt: now,
-                    turnDuration: 4,
-                    lastAction: {
-                        type: 'die',
-                        playerName: myProfile.name,
-                        msg: `💀 [${myProfile.name}]님이 DIE! 를 외쳤습니다! 다음 참가자는 DOWN!`,
-                        timestamp: now
-                    }
-                });
-            } else if (type === 'down' && data.phase === 'down') {
-                await eliminateMultiPlayer(myProfile.name, "DOWN! 에 걸려 자리에 앉았습니다!");
+            isMultiActionPending = true;
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            try {
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+                const now = Date.now();
+                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
+
+                if (type === 'sparkle' && data.phase === 'sparkle') {
+                    await updateDoc(roomRef, {
+                        phase: 'die',
+                        currentTurnPlayer: next.nextPlayer,
+                        currentTurnIndex: next.nextIndex,
+                        turnStartedAt: now,
+                        turnDuration: 4,
+                        lastAction: {
+                            type: 'sparkle',
+                            playerName: myProfile.name,
+                            msg: `✨ [${myProfile.name}]님이 SPARKLE! 을 외쳤습니다! 다음 참가자는 DIE!`,
+                            timestamp: now
+                        }
+                    });
+                } else if (type === 'die' && data.phase === 'die') {
+                    await updateDoc(roomRef, {
+                        phase: 'down',
+                        currentTurnPlayer: next.nextPlayer,
+                        currentTurnIndex: next.nextIndex,
+                        turnStartedAt: now,
+                        turnDuration: 4,
+                        lastAction: {
+                            type: 'die',
+                            playerName: myProfile.name,
+                            msg: `💀 [${myProfile.name}]님이 DIE! 를 외쳤습니다! 다음 참가자는 DOWN!`,
+                            timestamp: now
+                        }
+                    });
+                } else if (type === 'down' && data.phase === 'down') {
+                    await eliminateMultiPlayer(myProfile.name, "DOWN! 에 걸려 자리에 앉았습니다!");
+                }
+            } catch (err) {
+                console.error("Error in handleMultiSparkleTrigger:", err);
+            } finally {
+                isMultiActionPending = false;
             }
         }
 
         async function useMultiTurnSkip() {
+            if (isMultiActionPending) return;
             if (!currentMultiRoomData || !currentRoomId) return;
+
             const data = currentMultiRoomData;
-            if (data.phase !== 'relay' || data.currentTurnPlayer !== myProfile.name) return;
+            const turnNameTrimmed = String(data.currentTurnPlayer || '').trim();
+            const myNameTrimmed = String((myProfile && myProfile.name) || '').trim();
+
+            if (data.phase !== 'relay' || !turnNameTrimmed || turnNameTrimmed !== myNameTrimmed) return;
             if (!data.hasSkipChance || data.wordIndex <= 0) return;
 
-            const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
-            const now = Date.now();
-            const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
+            isMultiActionPending = true;
 
-            await updateDoc(roomRef, {
-                currentTurnPlayer: next.nextPlayer,
-                currentTurnIndex: next.nextIndex,
-                turnStartedAt: now,
-                turnDuration: 5,
-                lastAction: {
-                    type: 'skip',
-                    playerName: myProfile.name,
-                    msg: `⚡ [${myProfile.name}]님이 SKIP 찬스를 사용했습니다!`,
-                    timestamp: now
-                }
-            });
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+
+            try {
+                const roomRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'rooms', currentRoomId);
+                const now = Date.now();
+                const next = getNextAlivePlayer(data.playerOrder, data.players, data.currentTurnIndex, data.turnDirection || 1, 1);
+
+                await updateDoc(roomRef, {
+                    currentTurnPlayer: next.nextPlayer,
+                    currentTurnIndex: next.nextIndex,
+                    turnStartedAt: now,
+                    turnDuration: 5,
+                    lastAction: {
+                        type: 'skip',
+                        playerName: myProfile.name,
+                        msg: `⚡ [${myProfile.name}]님이 SKIP 찬스를 사용했습니다!`,
+                        timestamp: now
+                    }
+                });
+            } catch (err) {
+                console.error("Error in useMultiTurnSkip:", err);
+            } finally {
+                isMultiActionPending = false;
+            }
         }
 
         async function useMultiCheatKey(type) {
