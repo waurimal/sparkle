@@ -239,6 +239,21 @@
                             </div>
                         </div>
 
+                        <!-- 탈락자 깜짝 부활 옵션 -->
+                        <div class="p-3 bg-pink-50/70 rounded-xl border border-pink-200/80 flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-xl">💖</span>
+                                <div>
+                                    <div class="text-xs font-black text-slate-800">탈락자 깜짝 부활 찬스</div>
+                                    <div class="text-[11px] text-slate-500 font-medium">새 문장 라운드마다 탈락한 친구가 랜덤으로 부활합니다 (35% 확률)</div>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="solo-revive-toggle" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div>
+                            </label>
+                        </div>
+
                         <button type="button" onclick="startSoloGame()" class="w-full py-3.5 bg-gradient-to-r from-pink-600 via-rose-600 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white font-black text-base rounded-xl shadow-lg shadow-pink-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fas fa-play text-lg"></i>
                             <span>개인전 서바이벌 시작하기</span>
@@ -275,6 +290,16 @@
                                 <label for="multi-host-participate" class="cursor-pointer font-bold select-none">
                                     방장(교사)도 게임 참가하기 <span class="text-[10px] text-slate-400 font-normal">(체크 해제 시 교사용 전체화면 중계만 진행)</span>
                                 </label>
+                            </div>
+                            <div class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-700">
+                                <div class="flex items-center gap-2">
+                                    <span>💖</span>
+                                    <div>
+                                        <div class="font-bold text-slate-800">탈락자 깜짝 부활 허용</div>
+                                        <div class="text-[10px] text-slate-400">새 라운드 시작 시 탈락자 중 1명이 랜덤으로 다시 살아납니다 (35% 확률)</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" id="multi-revive-toggle" checked class="w-4 h-4 accent-pink-600 rounded cursor-pointer">
                             </div>
                             <button type="button" onclick="createMultiRoom()" class="w-full py-2.5 bg-pink-600 hover:bg-pink-500 text-white text-xs font-black rounded-lg transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
                                 <i class="fas fa-plus-circle"></i>
@@ -453,6 +478,9 @@
                 <div class="flex items-center gap-2">
                     <span id="game-skip-badge" class="hidden px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1 font-bold text-xs">
                         <i class="fas fa-bolt text-amber-500"></i> SKIP 가능!
+                    </span>
+                    <span id="game-revive-badge" class="hidden px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1 font-bold text-xs" title="탈락자 랜덤 부활 활성화">
+                        <i class="fas fa-heart text-rose-500"></i> 부활 ON
                     </span>
                     <span class="text-slate-600 font-bold text-xs">
                         생존자: <span id="game-alive-count" class="text-emerald-600 font-black">6</span>명
@@ -766,6 +794,12 @@
                         <li>• ⚠️ <strong>한 문장당 딱 1회만</strong> 사용 가능하며, 직접 입력창에 <code>back</code> / <code>jump</code> 입력 또는 전용 치트 버튼을 눌러 발동할 수 있습니다.</li>
                     </ul>
                 </div>
+                <div class="p-3 bg-rose-50 rounded-xl border border-rose-200 space-y-1">
+                    <div class="font-black text-rose-600 flex items-center gap-1.5">
+                        <i class="fas fa-heart text-rose-500"></i> 6. 탈락자 깜짝 부활 (선택 옵션)
+                    </div>
+                    <div>부활 옵션이 켜져 있으면, 새로운 라운드가 시작될 때 탈락했던 친구 중 1명이 기적처럼 랜덤으로 살아나 다시 대결에 합류할 수 있습니다!</div>
+                </div>
             </div>
             <button type="button" onclick="closeRulesModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition border border-slate-200 cursor-pointer">
                 닫기
@@ -1072,6 +1106,7 @@
             words: [],
             wordIndex: 0,
             hasSkipChance: false,
+            allowRevive: true,
             roundTimer: 0,
             maxTimer: 6
         };
@@ -1506,6 +1541,8 @@
                 });
             }
 
+            const allowRevive = document.getElementById('solo-revive-toggle') ? document.getElementById('solo-revive-toggle').checked : true;
+
             // 솔로 게임 인스턴스 초기화
             soloGame = {
                 unit: selectedUnit,
@@ -1521,6 +1558,7 @@
                 words: [],
                 wordIndex: 0,
                 hasSkipChance: false,
+                allowRevive: allowRevive,
                 roundTimer: maxT,
                 maxTimer: maxT
             };
@@ -1552,9 +1590,24 @@
             document.getElementById('game-round-badge').innerText = `Round ${soloGame.sentenceIndex + 1}`;
             document.getElementById('game-unit-title').innerText = soloGame.unit.name;
             document.getElementById('game-skip-badge').classList.toggle('hidden', !soloGame.hasSkipChance);
+            document.getElementById('game-revive-badge')?.classList.toggle('hidden', !soloGame.allowRevive);
             const dirBadge = document.getElementById('game-direction-badge');
             if (dirBadge) dirBadge.classList.add('hidden');
             updateCheatUI();
+
+            // 💖 탈락자 깜짝 부활 처리 (새 라운드 시작 시 탈락자가 있고 생존자가 2명 이상일 때)
+            let revivedPlayer = null;
+            if (soloGame.allowRevive && soloGame.sentenceIndex > 0) {
+                const deadPlayers = soloGame.players.filter(p => !p.isAlive);
+                const alivePlayers = soloGame.players.filter(p => p.isAlive);
+                if (deadPlayers.length > 0 && alivePlayers.length > 1) {
+                    const reviveRate = alivePlayers.length === 2 ? 0.50 : 0.35;
+                    if (Math.random() < reviveRate) {
+                        revivedPlayer = deadPlayers[Math.floor(Math.random() * deadPlayers.length)];
+                        revivedPlayer.isAlive = true;
+                    }
+                }
+            }
 
             // 관전 모드 상태 점검
             const myPlayer = soloGame.players.find(p => p.id === 'me' || p.name === myProfile.name);
@@ -1579,8 +1632,16 @@
             document.getElementById('turn-trigger-box').classList.add('hidden');
             document.getElementById('turn-waiting-box').classList.add('hidden');
 
-            playSfx('sparkle');
-            setFeedMessage(`새로운 라운드 시작! 문장을 암기하세요.`);
+            if (revivedPlayer) {
+                playSfx('fanfare');
+                try {
+                    confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+                } catch(e) {}
+                setFeedMessage(`💖 [깜짝 부활] [${revivedPlayer.name}]님이 기적처럼 다시 살아났습니다! 이번 라운드에 다시 도전합니다!`);
+            } else {
+                playSfx('sparkle');
+                setFeedMessage(`새로운 라운드 시작! 문장을 암기하세요.`);
+            }
 
             // 카운트다운 타이머 시작
             startRoundCountdown(soloGame.maxTimer, () => {
@@ -2386,6 +2447,7 @@
             const unitId = document.getElementById('multi-unit-select').value;
             const maxTime = parseInt(document.getElementById('multi-time-select').value, 10) || 6;
             const hostPlays = document.getElementById('multi-host-participate') ? document.getElementById('multi-host-participate').checked : true;
+            const allowRevive = document.getElementById('multi-revive-toggle') ? document.getElementById('multi-revive-toggle').checked : true;
             const unit = unitsData.find(u => u.id === unitId) || unitsData[0];
 
             // 4자리 랜덤 방 코드
@@ -2400,6 +2462,7 @@
                 unitName: unit.name,
                 maxTimer: maxTime,
                 hostPlays: hostPlays,
+                allowRevive: allowRevive,
                 status: "waiting", // "waiting" | "playing" | "finished"
                 players: {
                     [myProfile.name]: {
@@ -2637,6 +2700,7 @@
             document.getElementById('game-round-badge').innerText = `Round ${data.roundNumber || ((data.sentenceIndex || 0) + 1)}`;
             document.getElementById('game-unit-title').innerText = data.unitName || 'Sparkle DIE';
             document.getElementById('game-skip-badge').classList.toggle('hidden', !data.hasSkipChance);
+            document.getElementById('game-revive-badge')?.classList.toggle('hidden', !data.allowRevive);
             const dirBadge = document.getElementById('game-direction-badge');
             if (dirBadge) {
                 dirBadge.classList.toggle('hidden', (data.turnDirection || 1) !== -1);
@@ -2654,6 +2718,10 @@
                 else if (actType === 'sparkle' || actType === 'sparkle_start' || actType === 'game_start' || actType === 'cheat_back' || actType === 'cheat_jump') playSfx('sparkle');
                 else if (actType === 'die') playSfx('die');
                 else if (actType === 'down' || actType === 'down_and_next_round') playSfx('down');
+                else if (actType === 'revive') {
+                    playSfx('fanfare');
+                    try { confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } }); } catch(e) {}
+                }
             }
             if (data.lastAction && data.lastAction.msg) {
                 setFeedMessage(data.lastAction.msg);
@@ -3007,8 +3075,28 @@
             const maxTimer = data.maxTimer || 6;
             const initialChoices = getMultiWordChoices(words[0], sentences);
 
+            let finalPlayers = { ...updatedPlayers };
+            finalPlayers[eliminatedPlayerName] = { ...finalPlayers[eliminatedPlayerName], isAlive: false };
+
+            // 💖 탈락자 깜짝 부활 처리 (새 라운드 시작 시 탈락자가 있고 생존자가 2명 이상일 때)
+            let revivedPlayerName = null;
+            if (data.allowRevive) {
+                const deadNames = (data.playerOrder || []).filter(name => finalPlayers[name] && !finalPlayers[name].isAlive);
+                const aliveNames = (data.playerOrder || []).filter(name => finalPlayers[name] && finalPlayers[name].isAlive);
+                if (deadNames.length > 0 && aliveNames.length > 1) {
+                    const reviveRate = aliveNames.length === 2 ? 0.50 : 0.35;
+                    if (Math.random() < reviveRate) {
+                        revivedPlayerName = deadNames[Math.floor(Math.random() * deadNames.length)];
+                        finalPlayers[revivedPlayerName] = {
+                            ...finalPlayers[revivedPlayerName],
+                            isAlive: true
+                        };
+                    }
+                }
+            }
+
             await updateDoc(roomRef, {
-                [`players.${eliminatedPlayerName}.isAlive`]: false,
+                players: finalPlayers,
                 sentenceIndex: nextSentenceIdx,
                 sentences: sentences,
                 roundNumber: (data.roundNumber || 1) + 1,
@@ -3026,9 +3114,11 @@
                 turnDuration: maxTimer,
                 turnStartedAt: now,
                 lastAction: {
-                    type: 'down_and_next_round',
-                    playerName: eliminatedPlayerName,
-                    msg: `💥 [${eliminatedPlayerName}]님이 DOWN! 에 걸려 자리에 앉았습니다! 새로운 라운드 문장을 암기하세요.`,
+                    type: revivedPlayerName ? 'revive' : 'down_and_next_round',
+                    playerName: revivedPlayerName || eliminatedPlayerName,
+                    msg: revivedPlayerName 
+                        ? `💖 [깜짝 부활] [${revivedPlayerName}]님이 기적처럼 다시 살아났습니다! 새 라운드 문장을 암기하세요!`
+                        : `💥 [${eliminatedPlayerName}]님이 DOWN! 에 걸려 자리에 앉았습니다! 새로운 라운드 문장을 암기하세요.`,
                     timestamp: now
                 }
             });
