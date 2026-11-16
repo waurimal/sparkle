@@ -741,7 +741,7 @@
                 </div>
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                     <div class="font-black text-rose-600">2. 한 단어씩 릴레이 (Relay by Word)</div>
-                    <div>시간이 끝나면 문장이 블라인드 처리됩니다. 차례가 돌아온 플레이어는 문장의 다음 단어를 맞춰야 합니다. 잘못된 단어를 고르거나 시간이 초과되면 즉시 탈락합니다!</div>
+                    <div>시간이 끝나면 문장이 블라인드 처리됩니다. 차례가 돌아온 플레이어는 문장의 다음 단어를 맞춰야 합니다. 잘못된 단어를 고르거나 시간이 초과되면 즉시 탈락하며, 다음 차례 플레이어가 틀린 단어를 다시 맞춰야 합니다!</div>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                     <div class="font-black text-amber-600">3. 폭탄 트리거 (SPARKLE ➔ DIE ➔ DOWN)</div>
@@ -1747,7 +1747,7 @@
                 handleWordSuccess("me");
             } else {
                 // 단어 오류 ➔ 탈락!
-                eliminateCurrentPlayer(`"${selectedWord}"는 잘못된 단어입니다! (정답: "${targetWord}")`);
+                eliminateCurrentPlayer(`"${selectedWord}"는 잘못된 단어입니다!`);
             }
         };
 
@@ -1934,7 +1934,7 @@
             }
         }
 
-        // 탈락 처리 (틀려도 문장이 끝나지 않고 다음 사람이 이어서 그 다음 단어 진행)
+        // 탈락 처리 (틀린 경우 다음 사람이 이어서 해당 단어 다시 진행)
         function eliminateCurrentPlayer(reason) {
             if (currentGameMode !== 'solo') return;
             if (timerInterval) clearInterval(timerInterval);
@@ -1970,16 +1970,19 @@
 
             // 페이즈별 분기 처리
             if (soloGame.phase === "relay") {
-                // ── [단어 릴레이 단계]: 참가자가 틀려도 문장이 끝나지 않고, 다음 사람이 이어서 그 다음 단어 말하기! ──
-                const missedWord = soloGame.words[soloGame.wordIndex];
+                // ── [단어 릴레이 단계]: 참가자가 틀리면 탈락하고, 다음 사람이 틀린 단어를 다시 맞히기! ──
                 const slot = document.getElementById(`word-slot-${soloGame.wordIndex}`);
                 if (slot) {
-                    slot.innerText = missedWord;
-                    slot.className = "px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-rose-500 bg-rose-500/20 text-rose-300 min-w-[70px] text-center shadow-md shadow-rose-500/20";
+                    slot.className = "px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-rose-500 bg-rose-500/20 text-rose-400 min-w-[70px] text-center blind-slot animate-pulse";
+                    setTimeout(() => {
+                        if (slot && soloGame && soloGame.phase === "relay" && slot.innerText === "?") {
+                            slot.className = "px-3.5 py-2 rounded-xl text-sm font-black font-game border-2 border-slate-700 bg-slate-800 text-slate-500 min-w-[70px] text-center blind-slot";
+                        }
+                    }, 1000);
                 }
 
-                setFeedMessage(`💥 [${curPlayer.name}]님 탈락! (정답: "${missedWord}") 다음 참가자가 이어서 진행합니다.`);
-                soloGame.wordIndex++;
+                setFeedMessage(`💥 [${curPlayer.name}]님 탈락! (${reason}) 다음 참가자가 이 단어에 도전합니다.`);
+                // wordIndex는 증가시키지 않고 유지 (다음 참가자가 틀린 단어를 다시 맞힘)
 
                 setTimeout(() => {
                     const remainingAlive = soloGame.players.filter(p => p.isAlive);
@@ -1988,18 +1991,9 @@
                         return;
                     }
 
-                    if (soloGame.wordIndex >= soloGame.words.length) {
-                        // 모든 단어가 완성되었으면 피날레 폭탄 단계로 진입
-                        soloGame.phase = "sparkle";
-                        document.getElementById('game-phase-label').innerText = "💥 문장 완성! 폭탄 트리거 발동!";
-                        setFeedMessage("💥 문장 완성! 폭탄 트리거 발동! (SPARKLE ➔ DIE ➔ DOWN)");
-                        advanceToNextAliveTurn();
-                        processCurrentTurn();
-                    } else {
-                        // 다음 사람이 이어서 그 다음 단어 말하기 진행
-                        advanceToNextAliveTurn();
-                        processCurrentTurn();
-                    }
+                    // 다음 생존자가 이어서 같은 단어 맞히기 진행
+                    advanceToNextAliveTurn();
+                    processCurrentTurn();
                 }, 1200);
 
             } else if (soloGame.phase === "sparkle") {
@@ -2913,7 +2907,7 @@
                         });
                     }
                 } else {
-                    await eliminateMultiPlayer(myProfile.name, `"${selectedWord}"는 잘못된 단어입니다! (정답: "${targetWord}")`);
+                    await eliminateMultiPlayer(myProfile.name, `"${selectedWord}"는 잘못된 단어입니다!`);
                 }
             } catch (err) {
                 console.error("Error in selectMultiWordChoice:", err);
@@ -2961,46 +2955,24 @@
             const next = getNextAlivePlayer(data.playerOrder, updatedPlayers, data.currentTurnIndex, data.turnDirection || 1, 1);
 
             if (data.phase === 'relay') {
-                const nextWordIdx = data.wordIndex + 1;
-                const targetWord = data.words[data.wordIndex];
-
-                if (nextWordIdx >= data.words.length) {
-                    await updateDoc(roomRef, {
-                        [`players.${playerName}.isAlive`]: false,
-                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'wrong' },
-                        wordIndex: nextWordIdx,
-                        phase: 'sparkle',
-                        currentTurnPlayer: next.nextPlayer,
-                        currentTurnIndex: next.nextIndex,
-                        turnStartedAt: now,
-                        turnDuration: 4,
-                        lastAction: {
-                            type: 'eliminated',
-                            playerName: playerName,
-                            msg: `💥 [${playerName}]님 탈락! ${reason} 다음 참가자가 폭탄 트리거(SPARKLE)를 진행합니다.`,
-                            timestamp: now
-                        }
-                    });
-                } else {
-                    const nextChoices = getMultiWordChoices(data.words[nextWordIdx], data.sentences);
-                    await updateDoc(roomRef, {
-                        [`players.${playerName}.isAlive`]: false,
-                        [`revealedWords.${data.wordIndex}`]: { word: targetWord, status: 'wrong' },
-                        wordIndex: nextWordIdx,
-                        phase: 'relay',
-                        turnChoices: nextChoices,
-                        currentTurnPlayer: next.nextPlayer,
-                        currentTurnIndex: next.nextIndex,
-                        turnStartedAt: now,
-                        turnDuration: 5,
-                        lastAction: {
-                            type: 'eliminated',
-                            playerName: playerName,
-                            msg: `💥 [${playerName}]님 탈락! ${reason} 다음 참가자가 이어서 진행합니다.`,
-                            timestamp: now
-                        }
-                    });
-                }
+                // 단어를 틀리면 넘기지 않고 다음 참가자가 해당 단어를 다시 맞히도록 유지
+                const currentChoices = getMultiWordChoices(data.words[data.wordIndex], data.sentences);
+                await updateDoc(roomRef, {
+                    [`players.${playerName}.isAlive`]: false,
+                    wordIndex: data.wordIndex,
+                    phase: 'relay',
+                    turnChoices: currentChoices,
+                    currentTurnPlayer: next.nextPlayer,
+                    currentTurnIndex: next.nextIndex,
+                    turnStartedAt: now,
+                    turnDuration: 5,
+                    lastAction: {
+                        type: 'eliminated',
+                        playerName: playerName,
+                        msg: `💥 [${playerName}]님 탈락! (${reason}) 다음 참가자가 이 단어에 도전합니다.`,
+                        timestamp: now
+                    }
+                });
             } else if (data.phase === 'sparkle' || data.phase === 'die') {
                 await updateDoc(roomRef, {
                     [`players.${playerName}.isAlive`]: false,
