@@ -1031,6 +1031,8 @@
         let currentRoomId = null;
         let unsubscribeRoom = null;
         let timerInterval = null;
+        let aiTurnTimeout = null; // AI 봇 생각 및 턴 처리 타임아웃 타이머
+        let isSoloActionPending = false; // 솔로 모드 더블클릭/중복 전송/레이스 컨디션 방지 락
         let currentMultiRoomData = null; // 멀티플레이 실시간 Firestore 룸 데이터
         let lastHandledActionTime = 0;   // 멀티플레이 효과음 중복 방지 타임스탬프
         let hostWatchdogTimer = null;    // 호스트 턴 감시 타이머 (비정상 지연 방지)
@@ -1526,7 +1528,7 @@
 
             // 플레이어 리스트 구성 (나 + AI 봇들)
             const players = [
-                { id: "me", name: myProfile.name, avatar: myProfile.avatar, isAi: false, isAlive: true, score: 0 }
+                { id: "me", name: myProfile.name, avatar: myProfile.avatar, isAi: false, isAlive: true, score: 0, reviveCount: 0, eliminatedSentence: -1 }
             ];
 
             const shuffledBots = [...AI_BOT_NAMES].sort(() => Math.random() - 0.5);
@@ -1537,7 +1539,9 @@
                     avatar: AVATARS[(i + 2) % AVATARS.length],
                     isAi: true,
                     isAlive: true,
-                    score: 0
+                    score: 0,
+                    reviveCount: 0,
+                    eliminatedSentence: -1
                 });
             }
 
@@ -1597,14 +1601,25 @@
 
             // 💖 탈락자 깜짝 부활 처리 (새 라운드 시작 시 탈락자가 있고 생존자가 2명 이상일 때)
             let revivedPlayer = null;
+            soloGame.revivedThisRound = null;
             if (soloGame.allowRevive && soloGame.sentenceIndex > 0) {
-                const deadPlayers = soloGame.players.filter(p => !p.isAlive);
+                const deadPlayers = soloGame.players.filter(p => {
+                    if (p.isAlive) return false;
+                    // 이미 부활한 적이 있으면 재부활 불가 (게임당 최대 1회 한정)
+                    if ((p.reviveCount || 0) >= 1) return false;
+                    // 직전 라운드 방금 탈락자 즉시 부활 방지 (최소 1문장 대기 쿨다운)
+                    const diedAt = p.eliminatedSentence !== undefined ? p.eliminatedSentence : 0;
+                    return (soloGame.sentenceIndex - diedAt) >= 1;
+                });
                 const alivePlayers = soloGame.players.filter(p => p.isAlive);
                 if (deadPlayers.length > 0 && alivePlayers.length > 1) {
-                    const reviveRate = alivePlayers.length === 2 ? 0.50 : 0.35;
+                    // 부활 빈도 밸런싱: 생존자 2명 시 25%, 3명 이상 시 18% (이전 50%/35%에서 하향)
+                    const reviveRate = alivePlayers.length === 2 ? 0.25 : 0.18;
                     if (Math.random() < reviveRate) {
                         revivedPlayer = deadPlayers[Math.floor(Math.random() * deadPlayers.length)];
                         revivedPlayer.isAlive = true;
+                        revivedPlayer.reviveCount = (revivedPlayer.reviveCount || 0) + 1;
+                        soloGame.revivedThisRound = revivedPlayer;
                     }
                 }
             }
@@ -1621,6 +1636,8 @@
 
             // 1단계: 문장 암기 페이즈 (Memorize Phase)
             soloGame.phase = "memorize";
+            isSoloActionPending = false;
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
             document.getElementById('game-phase-label').innerText = "🧠 문장을 집중해서 암기하세요!";
             document.getElementById('memorize-sentence-text').innerText = soloGame.currentSentence;
             document.getElementById('memorize-sentence-text').classList.remove('hidden');
@@ -1653,6 +1670,8 @@
         function startSoloRelayPhase() {
             if (currentGameMode !== 'solo') return;
             soloGame.phase = "relay";
+            isSoloActionPending = false;
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
             document.getElementById('game-phase-label').innerText = "🗣️ 한 단어씩 순서대로 릴레이 완성하기!";
             document.getElementById('memorize-sentence-text').classList.add('hidden');
             document.getElementById('memorize-sentence-kr').classList.add('hidden');
@@ -1666,13 +1685,26 @@
                 </div>
             `).join('');
 
-            // 살아있는 첫 턴 플레이어 확인
-            advanceToNextAliveTurn();
+            // 살아있는 첫 턴 플레이어 확인 (내가 부활한 경우 즉시 보기가 나오도록 내 턴으로 우선 배정)
+            if (soloGame.revivedThisRound && soloGame.revivedThisRound.id === 'me') {
+                const myIdx = soloGame.players.findIndex(p => p.id === 'me');
+                if (myIdx !== -1) {
+                    soloGame.currentTurnIndex = myIdx;
+                } else {
+                    advanceToNextAliveTurn();
+                }
+            } else {
+                advanceToNextAliveTurn();
+            }
+            soloGame.revivedThisRound = null;
             processCurrentTurn();
         }
 
         function processCurrentTurn() {
             if (currentGameMode !== 'solo') return;
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
+            isSoloActionPending = false;
+
             const alivePlayers = soloGame.players.filter(p => p.isAlive);
             if (alivePlayers.length <= 1) {
                 // 게임 종료 (1명 생존)
@@ -1696,7 +1728,8 @@
                 const targetWord = soloGame.words[soloGame.wordIndex];
 
                 if (curPlayer.id === "me") {
-                    // 내 차례
+                    // 내 차례: 관전 박스 숨김 및 단어 선택지 노출
+                    document.getElementById('game-spectator-box')?.classList.add('hidden');
                     document.getElementById('turn-waiting-box').classList.add('hidden');
                     document.getElementById('turn-word-options').classList.remove('hidden');
                     document.getElementById('turn-trigger-box').classList.add('hidden');
@@ -1711,8 +1744,10 @@
 
                     // 내 턴 타이머 (5초)
                     startRoundCountdown(5, () => {
-                        // 시간 초과 탈락
-                        eliminateCurrentPlayer("시간 초과로 탈락했습니다!");
+                        // 시간 초과 탈락 (액션 진행 중이 아닐 때만 처리)
+                        if (!isSoloActionPending) {
+                            eliminateCurrentPlayer("시간 초과로 탈락했습니다!");
+                        }
                     });
                 } else {
                     // AI 봇 차례
@@ -1722,7 +1757,8 @@
 
                     // AI 생각 딜레이
                     startRoundCountdown(3, null);
-                    setTimeout(() => {
+                    if (aiTurnTimeout) clearTimeout(aiTurnTimeout);
+                    aiTurnTimeout = setTimeout(() => {
                         handleAiTurn(curPlayer, targetWord);
                     }, 1200 + Math.random() * 800);
                 }
@@ -1731,6 +1767,7 @@
             else if (["sparkle", "die", "down"].includes(soloGame.phase)) {
                 if (curPlayer.id === "me") {
                     // 내 차례: 트리거 버튼 노출
+                    document.getElementById('game-spectator-box')?.classList.add('hidden');
                     document.getElementById('turn-waiting-box').classList.add('hidden');
                     document.getElementById('turn-word-options').classList.add('hidden');
                     document.getElementById('turn-trigger-box').classList.remove('hidden');
@@ -1740,10 +1777,12 @@
                     document.getElementById('btn-trigger-down').classList.toggle('hidden', soloGame.phase !== 'down');
 
                     startRoundCountdown(4, () => {
-                        if (soloGame.phase === 'down') {
-                            eliminateCurrentPlayer("DOWN! 에 걸려 탈락했습니다!");
-                        } else {
-                            eliminateCurrentPlayer("시간 초과로 버튼을 누르지 못해 탈락했습니다!");
+                        if (!isSoloActionPending) {
+                            if (soloGame.phase === 'down') {
+                                eliminateCurrentPlayer("DOWN! 에 걸려 탈락했습니다!");
+                            } else {
+                                eliminateCurrentPlayer("시간 초과로 버튼을 누르지 못해 탈락했습니다!");
+                            }
                         }
                     });
                 } else {
@@ -1753,7 +1792,8 @@
                     document.getElementById('turn-trigger-box').classList.add('hidden');
 
                     startRoundCountdown(3, null);
-                    setTimeout(() => {
+                    if (aiTurnTimeout) clearTimeout(aiTurnTimeout);
+                    aiTurnTimeout = setTimeout(() => {
                         handleAiTrigger(curPlayer);
                     }, 1000 + Math.random() * 600);
                 }
@@ -1794,10 +1834,27 @@
                 return;
             }
 
-            // 클릭 즉시 타이머를 정지하여 타임아웃과의 레이스 컨디션 차단
+            if (isSoloActionPending) return;
+            isSoloActionPending = true;
+
+            // 클릭 즉시 타이머 및 AI 타이머를 정지하여 레이스 컨디션 원천 차단
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
+            }
+            if (aiTurnTimeout) {
+                clearTimeout(aiTurnTimeout);
+                aiTurnTimeout = null;
+            }
+
+            // 중복 클릭/터치 방지를 위한 버튼 비활성화
+            const grid = document.getElementById('word-buttons-grid');
+            if (grid) {
+                const btns = grid.querySelectorAll('button');
+                btns.forEach(b => {
+                    b.disabled = true;
+                    b.classList.add('opacity-60', 'pointer-events-none');
+                });
             }
 
             const targetWord = soloGame.words[soloGame.wordIndex];
@@ -1880,7 +1937,10 @@
                 useMultiTurnSkip();
                 return;
             }
+            if (isSoloActionPending) return;
+            isSoloActionPending = true;
             if (timerInterval) clearInterval(timerInterval);
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
             playSfx('sparkle');
             setFeedMessage(`⚡ [${myProfile.name}]님이 SKIP 찬스를 사용했습니다!`);
             advanceToNextAliveTurn();
@@ -1891,6 +1951,7 @@
         function handleAiTurn(bot, targetWord) {
             if (currentGameMode !== 'solo') return;
             if (timerInterval) clearInterval(timerInterval);
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
 
             // 1) 봇 Skip 사용 확률 (찬스가 있고 첫 단어 아닐 때 20%)
             if (soloGame.hasSkipChance && soloGame.wordIndex > 0 && Math.random() < 0.2) {
@@ -1918,7 +1979,15 @@
         // 단어 적중 성공 처리
         function handleWordSuccess(playerId) {
             if (currentGameMode !== 'solo') return;
-            if (timerInterval) clearInterval(timerInterval);
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (aiTurnTimeout) {
+                clearTimeout(aiTurnTimeout);
+                aiTurnTimeout = null;
+            }
+            isSoloActionPending = true;
             playSfx('correct');
 
             const slot = document.getElementById(`word-slot-${soloGame.wordIndex}`);
@@ -1953,7 +2022,10 @@
                 handleMultiSparkleTrigger(type);
                 return;
             }
+            if (isSoloActionPending) return;
+            isSoloActionPending = true;
             if (timerInterval) clearInterval(timerInterval);
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
 
             if (type === 'sparkle') {
                 playSfx('sparkle');
@@ -1976,6 +2048,7 @@
         // AI 봇 트리거 처리
         function handleAiTrigger(bot) {
             if (timerInterval) clearInterval(timerInterval);
+            if (aiTurnTimeout) { clearTimeout(aiTurnTimeout); aiTurnTimeout = null; }
 
             if (soloGame.phase === 'sparkle') {
                 playSfx('sparkle');
@@ -1998,15 +2071,34 @@
         // 탈락 처리 (틀린 경우 다음 사람이 이어서 해당 단어 다시 진행)
         function eliminateCurrentPlayer(reason) {
             if (currentGameMode !== 'solo') return;
-            if (timerInterval) clearInterval(timerInterval);
+            isSoloActionPending = true;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (aiTurnTimeout) {
+                clearTimeout(aiTurnTimeout);
+                aiTurnTimeout = null;
+            }
             playSfx('wrong');
             setTimeout(() => playSfx('down'), 150);
 
             const curPlayer = soloGame.players[soloGame.currentTurnIndex];
             curPlayer.isAlive = false;
+            curPlayer.eliminatedSentence = soloGame.sentenceIndex;
 
             setFeedMessage(`💥 ${reason}`);
             updateArenaUI(soloGame.players, soloGame.currentTurnIndex);
+
+            // 선택지 버튼 비활성화 (오답 후 턴 전환 중 추가 클릭 방지)
+            const grid = document.getElementById('word-buttons-grid');
+            if (grid) {
+                const btns = grid.querySelectorAll('button');
+                btns.forEach(b => {
+                    b.disabled = true;
+                    b.classList.add('opacity-60', 'pointer-events-none');
+                });
+            }
 
             // 내가 탈락한 경우 처리
             const isMe = (curPlayer.id === 'me' || curPlayer.name === myProfile.name);
@@ -2015,6 +2107,10 @@
                 saveScoreToHallOfFame(curPlayer.score || 0, '탈락', soloGame.unit ? soloGame.unit.id : 'unit_lesson_9_canva');
                 // 관전 안내 배너 활성화 및 턴 조작 패널 정리
                 document.getElementById('game-spectator-box')?.classList.remove('hidden');
+                document.getElementById('turn-word-options')?.classList.add('hidden');
+                document.getElementById('turn-trigger-box')?.classList.add('hidden');
+                document.getElementById('turn-waiting-box')?.classList.remove('hidden');
+            } else {
                 document.getElementById('turn-word-options')?.classList.add('hidden');
                 document.getElementById('turn-trigger-box')?.classList.add('hidden');
                 document.getElementById('turn-waiting-box')?.classList.remove('hidden');
@@ -2257,7 +2353,9 @@
                     timerInterval = null;
                     num.innerText = 0;
                     bar.style.width = '0%';
-                    if (onTimeout) onTimeout();
+                    if (onTimeout && !isSoloActionPending) {
+                        onTimeout();
+                    }
                 } else {
                     num.innerText = Math.ceil(remain);
                     bar.style.width = `${(remain / seconds) * 100}%`;
@@ -2628,7 +2726,9 @@
                 updatedPlayers[p.name] = {
                     ...p,
                     isAlive: !p.isSpectator,
-                    score: 0
+                    score: 0,
+                    reviveCount: 0,
+                    eliminatedRound: -1
                 };
             });
 
@@ -2818,7 +2918,7 @@
                         const choices = data.turnChoices || getMultiWordChoices(data.words[data.wordIndex], data.sentences);
                         const grid = document.getElementById('word-buttons-grid');
                         const turnKey = `multi_${data.roundNumber || 0}_${data.wordIndex}_${turnNameTrimmed}_${choices.join('|')}`;
-                        if (grid && grid.dataset.renderedKey !== turnKey) {
+                        if (grid && (grid.dataset.renderedKey !== turnKey || grid.children.length === 0)) {
                             grid.innerHTML = renderWordButtonsHTML(choices);
                             grid.dataset.renderedKey = turnKey;
                             const inputEl = document.getElementById('turn-word-input');
@@ -2856,10 +2956,11 @@
             // 6. 타이머 및 호스트 감시 타이머 (Watchdog)
             const duration = data.turnDuration || 5;
             const elapsed = (Date.now() - (data.turnStartedAt || Date.now())) / 1000;
-            const remain = Math.max(0, duration - elapsed);
+            // 클럭 오차 및 네트워크 지연에 따른 억울한 즉시 탈락 방지 (최소 3.5초 응답시간 보장)
+            const remain = Math.max(3.5, Math.min(duration, duration - Math.max(0, elapsed)));
 
             startMultiCountdown(remain, duration, async () => {
-                if (isMyTurn) {
+                if (isMyTurn && !isMultiActionPending) {
                     if (data.phase === 'relay') {
                         await eliminateMultiPlayer(myProfile.name, "시간 초과로 탈락했습니다!");
                     } else if (data.phase === 'sparkle' || data.phase === 'die') {
@@ -2896,8 +2997,8 @@
                         }
                     }, timeToWait);
                 } else {
-                    // 참가자 미응답/네트워크 지연 시 호스트가 2.5초 후 타임아웃 강제 처리
-                    const timeToWait = Math.max(0, (remain * 1000) + 2500);
+                    // 참가자 미응답/네트워크 지연 시 호스트가 3.5초 추가 유예 후 타임아웃 강제 처리
+                    const timeToWait = Math.max(0, (remain * 1000) + 3500);
                     hostWatchdogTimer = setTimeout(async () => {
                         if (currentMultiRoomData && currentMultiRoomData.status === 'playing' && currentMultiRoomData.currentTurnPlayer === data.currentTurnPlayer) {
                             console.log("Host watchdog: eliminating inactive turn player:", data.currentTurnPlayer);
@@ -2992,7 +3093,11 @@
 
             const updatedPlayers = { ...data.players };
             if (updatedPlayers[playerName]) {
-                updatedPlayers[playerName] = { ...updatedPlayers[playerName], isAlive: false };
+                updatedPlayers[playerName] = { 
+                    ...updatedPlayers[playerName], 
+                    isAlive: false,
+                    eliminatedRound: data.roundNumber || 1
+                };
             }
 
             const alivePlayers = (data.playerOrder || []).filter(n => updatedPlayers[n] && updatedPlayers[n].isAlive);
@@ -3080,16 +3185,27 @@
 
             // 💖 탈락자 깜짝 부활 처리 (새 라운드 시작 시 탈락자가 있고 생존자가 2명 이상일 때)
             let revivedPlayerName = null;
-            if (data.allowRevive) {
-                const deadNames = (data.playerOrder || []).filter(name => finalPlayers[name] && !finalPlayers[name].isAlive);
+            if (data.allowRevive && (data.roundNumber || 1) >= 2) {
+                const currentRound = (data.roundNumber || 1);
+                const deadNames = (data.playerOrder || []).filter(name => {
+                    const p = finalPlayers[name];
+                    if (!p || p.isAlive) return false;
+                    // 이미 부활한 적이 있으면 재부활 불가 (게임당 최대 1회)
+                    if ((p.reviveCount || 0) >= 1) return false;
+                    // 직전 라운드 방금 탈락자 즉시 부활 방지 (최소 1문장 대기 쿨다운)
+                    const diedAt = p.eliminatedRound !== undefined ? p.eliminatedRound : 0;
+                    return (currentRound - diedAt) >= 1;
+                });
                 const aliveNames = (data.playerOrder || []).filter(name => finalPlayers[name] && finalPlayers[name].isAlive);
                 if (deadNames.length > 0 && aliveNames.length > 1) {
-                    const reviveRate = aliveNames.length === 2 ? 0.50 : 0.35;
+                    // 부활 빈도 밸런싱: 생존자 2명 시 25%, 3명 이상 시 18% (이전 50%/35%에서 하향)
+                    const reviveRate = aliveNames.length === 2 ? 0.25 : 0.18;
                     if (Math.random() < reviveRate) {
                         revivedPlayerName = deadNames[Math.floor(Math.random() * deadNames.length)];
                         finalPlayers[revivedPlayerName] = {
                             ...finalPlayers[revivedPlayerName],
-                            isAlive: true
+                            isAlive: true,
+                            reviveCount: (finalPlayers[revivedPlayerName].reviveCount || 0) + 1
                         };
                     }
                 }
