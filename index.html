@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="../common/waurimal-theme.css">
     <script src="../common/waurimal-nav.js"></script>
     <script src="../common/firebase-config.js"></script>
-    <script src="../common/curriculum.js"></script>
+    <script src="../common/curriculum.js?v=20261121_authentic44_v7"></script>
 
     <style>
         :root {
@@ -189,6 +189,60 @@
 
                     <!-- ── TAB 1: 혼자하기 (Solo Mode) 설정 ── -->
                     <div id="home-tab-solo" class="space-y-4">
+                        <!-- 학년 및 교과서 선택 (3·4학년: YBM 최희경 / 5·6학년: 천재 함순애) -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-slate-800">
+                                    <i class="fas fa-graduation-cap text-pink-500 mr-1"></i> 학년 및 교과서 선택
+                                </span>
+                                <span class="text-[10px] text-slate-500 font-medium">초등 3~6학년 44단원 완비</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2" id="sparkleGradeTabsWrap">
+                                <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-pink-50 border-pink-500 text-pink-700 shadow-xs cursor-pointer" data-grade="3" onclick="setSparkleSelectedGrade(3)" id="sparkleGradeBtn3">
+                                    <div class="flex items-center gap-1.5 font-black text-xs">
+                                        <i class="fas fa-graduation-cap"></i> 3학년
+                                    </div>
+                                    <span class="text-[10px] text-pink-600 font-medium">YBM (최희경)</span>
+                                </button>
+                                <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer" data-grade="4" onclick="setSparkleSelectedGrade(4)" id="sparkleGradeBtn4">
+                                    <div class="flex items-center gap-1.5 font-black text-xs">
+                                        <i class="fas fa-graduation-cap"></i> 4학년
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-medium">YBM (최희경)</span>
+                                </button>
+                                <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer" data-grade="5" onclick="setSparkleSelectedGrade(5)" id="sparkleGradeBtn5">
+                                    <div class="flex items-center gap-1.5 font-black text-xs">
+                                        <i class="fas fa-graduation-cap"></i> 5학년
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-medium">천재 (함순애)</span>
+                                </button>
+                                <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer" data-grade="6" onclick="setSparkleSelectedGrade(6)" id="sparkleGradeBtn6">
+                                    <div class="flex items-center gap-1.5 font-black text-xs">
+                                        <i class="fas fa-graduation-cap"></i> 6학년
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-medium">천재 (함순애)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 학기 범위 선택 (전체 / 1학기 / 2학기) -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-slate-700">
+                                <i class="fas fa-calendar-alt text-pink-500 mr-1"></i> 학기 범위 선택
+                            </label>
+                            <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl" id="sparkleSemTabsWrap">
+                                <button type="button" class="sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-pink-700 shadow-xs cursor-pointer" data-sem="all" onclick="setSparkleSelectedSemester('all')" id="sparkleSemAllBtn">
+                                    전체 (1~10단원)
+                                </button>
+                                <button type="button" class="sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer" data-sem="1" onclick="setSparkleSelectedSemester(1)" id="sparkleSem1Btn">
+                                    1학기 (1~5단원)
+                                </button>
+                                <button type="button" class="sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer" data-sem="2" onclick="setSparkleSelectedSemester(2)" id="sparkleSem2Btn">
+                                    2학기 (6~10단원)
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">
@@ -269,6 +323,59 @@
                                     <i class="fas fa-crown text-amber-500"></i> 새로운 방 만들기 (호스트)
                                 </span>
                             </div>
+                            <!-- 학년 및 교과서 선택 (멀티플레이) -->
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-700">
+                                        <i class="fas fa-graduation-cap text-pink-500 mr-1"></i> 학년 및 교과서 선택
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2" id="multiSparkleGradeTabsWrap">
+                                    <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-pink-50 border-pink-500 text-pink-700 shadow-xs cursor-pointer" data-grade="3" onclick="setSparkleSelectedGrade(3)" id="multiSparkleGradeBtn3">
+                                        <div class="flex items-center gap-1.5 font-black text-xs">
+                                            <i class="fas fa-graduation-cap"></i> 3학년
+                                        </div>
+                                        <span class="text-[10px] text-pink-600 font-medium">YBM (최희경)</span>
+                                    </button>
+                                    <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer" data-grade="4" onclick="setSparkleSelectedGrade(4)" id="multiSparkleGradeBtn4">
+                                        <div class="flex items-center gap-1.5 font-black text-xs">
+                                            <i class="fas fa-graduation-cap"></i> 4학년
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-medium">YBM (최희경)</span>
+                                    </button>
+                                    <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer" data-grade="5" onclick="setSparkleSelectedGrade(5)" id="multiSparkleGradeBtn5">
+                                        <div class="flex items-center gap-1.5 font-black text-xs">
+                                            <i class="fas fa-graduation-cap"></i> 5학년
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-medium">천재 (함순애)</span>
+                                    </button>
+                                    <button type="button" class="sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer" data-grade="6" onclick="setSparkleSelectedGrade(6)" id="multiSparkleGradeBtn6">
+                                        <div class="flex items-center gap-1.5 font-black text-xs">
+                                            <i class="fas fa-graduation-cap"></i> 6학년
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-medium">천재 (함순애)</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 학기 범위 선택 (멀티플레이) -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-700">
+                                    <i class="fas fa-calendar-alt text-pink-500 mr-1"></i> 학기 범위 선택
+                                </label>
+                                <div class="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-xl" id="multiSparkleSemTabsWrap">
+                                    <button type="button" class="sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-pink-700 shadow-xs cursor-pointer" data-sem="all" onclick="setSparkleSelectedSemester('all')" id="multiSparkleSemAllBtn">
+                                        전체 (1~10단원)
+                                    </button>
+                                    <button type="button" class="sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer" data-sem="1" onclick="setSparkleSelectedSemester(1)" id="multiSparkleSem1Btn">
+                                        1학기 (1~5단원)
+                                    </button>
+                                    <button type="button" class="sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer" data-sem="2" onclick="setSparkleSelectedSemester(2)" id="multiSparkleSem2Btn">
+                                        2학기 (6~10단원)
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">단원 선택</label>
@@ -1021,7 +1128,82 @@
         const AVATARS = ["🐥", "🦁", "🐰", "🐼", "🦊", "🐶", "🐱", "🐸", "🐻", "🦄", "🚀", "⭐"];
         const AI_BOT_NAMES = ["라이언", "춘식이", "루피", "뽀로로", "피카츄", "토끼봇", "알파봇", "짱구"];
 
+        let rawCurriculumLessons = [];
         let unitsData = [...DEFAULT_UNITS];
+        let currentSparkleGrade = 3;
+        let currentSparkleSemester = 'all';
+
+        function getLessonNumber(lesson) {
+            if (lesson.unit) return Number(lesson.unit);
+            if (lesson.lesson) return Number(lesson.lesson);
+            if (lesson.unitNumber) return Number(lesson.unitNumber);
+            const codeMatch = String(lesson.code || '').match(/_L(\d+)/i);
+            if (codeMatch) return parseInt(codeMatch[1], 10);
+            const nameMatch = String(lesson.name || '').match(/Lesson\s*(\d+)/i);
+            if (nameMatch) return parseInt(nameMatch[1], 10);
+            return 1;
+        }
+
+        window.setSparkleSelectedGrade = (g) => {
+            currentSparkleGrade = Number(g);
+            updateSparkleFilterUI();
+            populateUnitDropdowns();
+        };
+
+        window.setSparkleSelectedSemester = (sem) => {
+            currentSparkleSemester = sem;
+            updateSparkleFilterUI();
+            populateUnitDropdowns();
+        };
+
+        function updateSparkleFilterUI() {
+            [3, 4, 5, 6].forEach(g => {
+                const isCur = (g === currentSparkleGrade);
+                const pub = g <= 4 ? 'YBM (최희경)' : '천재 (함순애)';
+                
+                ['sparkleGradeBtn', 'multiSparkleGradeBtn'].forEach(prefix => {
+                    const btn = document.getElementById(prefix + g);
+                    if (!btn) return;
+                    if (isCur) {
+                        btn.className = "sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-pink-50 border-pink-500 text-pink-700 shadow-xs cursor-pointer";
+                        btn.innerHTML = `<div class=\"flex items-center gap-1.5 font-black text-xs\"><i class=\"fas fa-graduation-cap\"></i> ${g}학년</div><span class=\"text-[10px] text-pink-600 font-medium\">${pub}</span>`;
+                    } else {
+                        btn.className = "sparkle-grade-btn py-2 px-3 rounded-xl text-xs font-bold border transition-all text-left flex flex-col items-start bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer";
+                        btn.innerHTML = `<div class=\"flex items-center gap-1.5 font-black text-xs\"><i class=\"fas fa-graduation-cap\"></i> ${g}학년</div><span class=\"text-[10px] text-slate-400 font-medium\">${pub}</span>`;
+                    }
+                });
+            });
+
+            const is10 = (currentSparkleGrade <= 4);
+            const maxL = is10 ? 10 : 12;
+            const sem1L = is10 ? 5 : 6;
+            const sem2Start = sem1L + 1;
+
+            ['sparkleSem', 'multiSparkleSem'].forEach(prefix => {
+                const allBtn = document.getElementById(prefix + 'AllBtn');
+                const sem1Btn = document.getElementById(prefix + '1Btn');
+                const sem2Btn = document.getElementById(prefix + '2Btn');
+
+                if (allBtn) {
+                    allBtn.innerText = `전체 (1~${maxL}단원)`;
+                    allBtn.className = (currentSparkleSemester === 'all')
+                        ? "sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-pink-700 shadow-xs cursor-pointer"
+                        : "sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer";
+                }
+                if (sem1Btn) {
+                    sem1Btn.innerText = `1학기 (1~${sem1L}단원)`;
+                    sem1Btn.className = (currentSparkleSemester === 1 || currentSparkleSemester === '1')
+                        ? "sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-pink-700 shadow-xs cursor-pointer"
+                        : "sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer";
+                }
+                if (sem2Btn) {
+                    sem2Btn.innerText = `2학기 (${sem2Start}~${maxL}단원)`;
+                    sem2Btn.className = (currentSparkleSemester === 2 || currentSparkleSemester === '2')
+                        ? "sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-pink-700 shadow-xs cursor-pointer"
+                        : "sparkle-sem-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-800 cursor-pointer";
+                }
+            });
+        }
         let soundEnabled = true;
         let audioCtx = null;
 
@@ -1368,55 +1550,92 @@
         // 단원 목록 로딩 및 UI 드롭다운 연동
         // ─────────────────────────────────────────────────────────────────
         function syncWithWaurimalCurriculum() {
+            let lessons = [];
             if (window.WaurimalCurriculum && typeof window.WaurimalCurriculum.getLessons === 'function') {
-                const lessons = window.WaurimalCurriculum.getLessons();
-                if (Array.isArray(lessons) && lessons.length > 0) {
-                    const mapped = lessons.map(l => {
-                        let sents = [];
-                        if (Array.isArray(l.sentences) && l.sentences.length > 0) {
-                            sents = l.sentences.map(s => typeof s === 'string' ? s : (s.en || s.sentence || ''));
-                        } else if (Array.isArray(l.words) && l.words.length > 0) {
-                            sents = l.words.map(w => typeof w === 'string' ? `I like ${w}.` : `I like ${w.en || ''}.`);
-                        }
-                        return {
-                            id: l.code,
-                            code: l.code,
-                            grade: l.grade,
-                            name: l.name,
-                            sentences: sents.filter(s => s && s.trim().length > 0)
-                        };
-                    }).filter(u => u.sentences.length > 0);
+                const curLessons = window.WaurimalCurriculum.getLessons();
+                if (Array.isArray(curLessons) && curLessons.length >= 40) {
+                    lessons = curLessons;
+                }
+            }
+            if (lessons.length === 0 && Array.isArray(rawCurriculumLessons) && rawCurriculumLessons.length >= 40) {
+                lessons = rawCurriculumLessons;
+            }
 
-                    if (mapped.length > 0) {
-                        unitsData = mapped;
-                        populateUnitDropdowns();
-                        return true;
+            if (lessons.length > 0) {
+                const mapped = lessons.map(l => {
+                    const g = Number(l.grade);
+                    const uNum = getLessonNumber(l);
+                    const is10 = (g <= 4);
+                    const sem1Max = is10 ? 5 : 6;
+                    const semStr = (uNum <= sem1Max) ? '1' : '2';
+                    const padU = String(uNum).padStart(2, '0');
+                    const cleanName = String(l.name || l.title || `Lesson ${uNum}`).replace(/^\[.*?\]\s*/, '').trim();
+                    const unitName = `[${g}-${semStr}-${padU}] ${cleanName}`;
+
+                    let sents = [];
+                    if (Array.isArray(l.sentences) && l.sentences.length > 0) {
+                        sents = l.sentences.map(s => typeof s === 'string' ? s : (s.en || s.sentence || ''));
+                    } else if (Array.isArray(l.words) && l.words.length > 0) {
+                        sents = l.words.map(w => typeof w === 'string' ? `I like ${w}.` : `I like ${w.en || ''}.`);
                     }
+                    const cleanSents = sents.map(s => String(s || '').trim()).filter(s => s.length > 0);
+
+                    return {
+                        id: l.code || `unit_${g}_${uNum}`,
+                        code: l.code || `unit_${g}_${uNum}`,
+                        grade: g,
+                        unitNumber: uNum,
+                        name: unitName,
+                        sentences: cleanSents
+                    };
+                }).filter(u => u.sentences.length > 0);
+
+                if (mapped.length > 0) {
+                    unitsData = mapped;
+                    return true;
                 }
             }
             return false;
         }
 
         async function loadUnitsFromCloud() {
-            // 1. 와우리말 공통 통합 교육과정 (WaurimalCurriculum) 우선 연동
-            syncWithWaurimalCurriculum();
-
-            // 2. Sparkle 전용 클라우드 아티팩트 오버라이드 확인
+            // 1. config.json fetch 우선 시도
             try {
-                const docRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'settings', 'units');
-                const snap = await getDoc(docRef);
-                if (snap.exists() && snap.data().items && snap.data().items.length > 0) {
-                    unitsData = snap.data().items;
+                const res = await fetch('config.json');
+                if (res.ok) {
+                    const cfg = await res.json();
+                    if (cfg && Array.isArray(cfg.lessons) && cfg.lessons.length >= 40) {
+                        rawCurriculumLessons = cfg.lessons;
+                    }
                 }
             } catch(e) {
-                console.warn("Cloud units load notice:", e);
+                console.warn("config.json fetch notice:", e);
             }
+
+            // 2. WaurimalCurriculum 연동
+            const synced = syncWithWaurimalCurriculum();
+
+            // 3. Fallback to Firestore only if curriculum failed
+            if (!synced) {
+                try {
+                    const docRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'settings', 'units');
+                    const snap = await getDoc(docRef);
+                    if (snap.exists() && snap.data().items && snap.data().items.length > 0) {
+                        unitsData = snap.data().items;
+                    }
+                } catch(e) {
+                    console.warn("Cloud units load notice:", e);
+                }
+            }
+
+            updateSparkleFilterUI();
             populateUnitDropdowns();
         }
 
-        // 실시간 통합 교육과정 업데이트 이벤트 리스너 등록
         window.addEventListener('waurimal_curriculum_updated', () => {
             syncWithWaurimalCurriculum();
+            updateSparkleFilterUI();
+            populateUnitDropdowns();
         });
 
         function populateUnitDropdowns() {
@@ -1425,15 +1644,40 @@
             const hofSelect = document.getElementById('hof-filter-unit');
             const teacherSelect = document.getElementById('t-unit-dropdown');
 
-            const optionsHtml = unitsData.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+            const is10 = (currentSparkleGrade <= 4);
+            const sem1Max = is10 ? 5 : 6;
 
-            if (soloSelect) soloSelect.innerHTML = optionsHtml;
-            if (multiSelect) multiSelect.innerHTML = optionsHtml;
-            if (teacherSelect) teacherSelect.innerHTML = `<option value="new">+ 새 단원 추가 (새로 작성)</option>` + optionsHtml;
+            const filteredUnits = unitsData.filter(u => {
+                const g = Number(u.grade);
+                if (g && g !== currentSparkleGrade) return false;
+                const uNum = u.unitNumber || getLessonNumber(u);
+                if (currentSparkleSemester === 1 || currentSparkleSemester === '1') return uNum <= sem1Max;
+                if (currentSparkleSemester === 2 || currentSparkleSemester === '2') return uNum > sem1Max;
+                return true;
+            });
+
+            const displayUnits = (filteredUnits.length > 0) ? filteredUnits : unitsData;
+            const optionsHtml = displayUnits.map(u => `<option value="${u.id}">${u.name} (${u.sentences.length}문장)</option>`).join('');
+
+            if (soloSelect) {
+                const cur = soloSelect.value;
+                soloSelect.innerHTML = optionsHtml;
+                if (cur && displayUnits.some(u => u.id === cur)) soloSelect.value = cur;
+                else if (displayUnits.length > 0) soloSelect.value = displayUnits[0].id;
+            }
+            if (multiSelect) {
+                const cur = multiSelect.value;
+                multiSelect.innerHTML = optionsHtml;
+                if (cur && displayUnits.some(u => u.id === cur)) multiSelect.value = cur;
+                else if (displayUnits.length > 0) multiSelect.value = displayUnits[0].id;
+            }
+
+            const allOptionsHtml = unitsData.map(u => `<option value="${u.id}">${u.name} (${u.sentences.length}문장)</option>`).join('');
+            if (teacherSelect) teacherSelect.innerHTML = `<option value="new">+ 새 단원 추가 (새로 작성)</option>` + allOptionsHtml;
 
             if (hofSelect) {
                 const cur = hofSelect.value || 'ALL';
-                hofSelect.innerHTML = `<option value="ALL">전체 단원/주제</option>` + optionsHtml;
+                hofSelect.innerHTML = `<option value="ALL">전체 단원/주제</option>` + allOptionsHtml;
                 hofSelect.value = cur;
             }
         }
@@ -3831,7 +4075,12 @@
         // 앱 최초 초기화
         // ─────────────────────────────────────────────────────────────────
         async function initApp() {
+            window.initApp = initApp;
             loadStoredProfile();
+            if (myProfile.grade) {
+                const parsedG = parseInt(myProfile.grade, 10);
+                if ([3, 4, 5, 6].includes(parsedG)) currentSparkleGrade = parsedG;
+            }
             await loadUnitsFromCloud();
             listenToHallOfFame();
         }
